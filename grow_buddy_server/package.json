@@ -1,0 +1,12 @@
+{
+  "name": "grow-buddy-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend proxy and shared logic for Grow Buddy",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js",
+    "gen": "node scripts/generate.js && node scripts/gen_fixtures.js"
+  },
+  "engines": { "node": ">=20" }
+}

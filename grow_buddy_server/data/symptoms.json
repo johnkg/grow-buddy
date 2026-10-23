@@ -1,0 +1,34 @@
+{
+  "causes": {
+    "overwater": {"title":"Overwatering / poor drainage","why":"Roots sit in wet soil and cannot get air.","fix":"Check the pot has drainage holes. Let soil dry more between waterings. If the soil stays soggy or smells sour, repot into fresh, faster-draining mix and trim dark mushy roots."},
+    "underwater": {"title":"Underwatering","why":"Soil is dry and the plant cannot take up enough water.","fix":"Water deeply until it runs out the bottom, then check how fast the pot dries. Water on a steadier schedule."},
+    "sunburn": {"title":"Sunburn / heat stress","why":"Strong afternoon sun damages leaf tissue.","fix":"Move back from the sun or add 30-50% shade cloth. Acclimate plants to stronger sun gradually."},
+    "lowlight": {"title":"Not enough light","why":"The plant stretches or slows down to find light.","fix":"Move to a brighter spot or add reflected light. Rotate the pot regularly."},
+    "nutrient": {"title":"Nutrient shortage","why":"The plant is short on nitrogen or other nutrients.","fix":"Feed lightly with a balanced fertilizer at half strength. Do not fertilize a stressed, dry plant."},
+    "pests": {"title":"Pests (mites, aphids, mealybugs, scale)","why":"Small insects feed on the plant and weaken it.","fix":"Inspect leaf undersides and stem joints. Isolate the plant, wipe or rinse pests off, and use insecticidal soap or neem oil. Repeat weekly for a few weeks."},
+    "fungal": {"title":"Fungal or bacterial disease","why":"Wet leaves and poor airflow encourage spots and rot.","fix":"Remove affected leaves, water at the soil not the leaves, improve airflow, and avoid evening watering."},
+    "rootrot": {"title":"Root or stem rot","why":"Persistent wet soil lets rot organisms attack the base.","fix":"Unpot and check roots. Cut away black or mushy parts, repot in fresh dry mix, and hold off watering for several days. If the stem base is mushy, take cuttings from healthy parts."},
+    "salt": {"title":"Salt build-up or tap water minerals","why":"Fertilizer salts collect in the soil and burn leaf tips.","fix":"Flush the pot with plain water until it drains freely, and ease off on fertilizer."},
+    "potbound": {"title":"Root-bound / pot too small","why":"Roots have filled the pot and cannot support the plant.","fix":"Repot into a pot one size larger with fresh mix."},
+    "dryair": {"title":"Dry air or heat","why":"Hot, dry air dries out leaf edges faster than roots can supply water.","fix":"Keep soil evenly moist, group plants, and avoid hot reflected heat from walls."},
+    "aging": {"title":"Normal aging","why":"Oldest leaves yellow and drop as the plant grows.","fix":"If only one or two bottom leaves are affected and the rest looks healthy, no action is needed."}
+  },
+  "symptoms": [
+    {"id":"yellow_lower","label":"Yellow leaves (lower/older)","causes":["overwater","nutrient","aging","underwater"]},
+    {"id":"yellow_new","label":"Yellow new leaves","causes":["nutrient","overwater","lowlight"]},
+    {"id":"brown_tips","label":"Brown crispy tips or edges","causes":["underwater","salt","dryair","sunburn"]},
+    {"id":"brown_spots","label":"Brown or black spots on leaves","causes":["fungal","sunburn","pests"]},
+    {"id":"bleached","label":"Pale, bleached or scorched patches","causes":["sunburn"]},
+    {"id":"wilt_wet","label":"Wilting but soil is wet","causes":["overwater","rootrot"]},
+    {"id":"wilt_dry","label":"Wilting and soil is dry","causes":["underwater","potbound","dryair"]},
+    {"id":"wilt_afternoon","label":"Wilts in the afternoon, perks up by evening","causes":["dryair","sunburn","underwater"]},
+    {"id":"mushy_base","label":"Mushy or soft stem/base","causes":["rootrot","overwater"]},
+    {"id":"leggy","label":"Tall, stretched, pale growth","causes":["lowlight","nutrient"]},
+    {"id":"curling","label":"Leaves curling or cupping","causes":["sunburn","underwater","pests"]},
+    {"id":"white_powder","label":"White powdery coating","causes":["fungal"]},
+    {"id":"webbing_bugs","label":"Visible bugs, webbing or cottony fluff","causes":["pests"]},
+    {"id":"sticky","label":"Sticky residue on leaves","causes":["pests"]},
+    {"id":"holes","label":"Holes or chewed leaves","causes":["pests"]},
+    {"id":"no_growth","label":"No new growth","causes":["lowlight","nutrient","potbound","underwater"]}
+  ]
+}

@@ -1,0 +1,397 @@
+<title>Grow Buddy</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+  /* Layout: one narrow column, sticky tab bar, a sun-hours strip as the signature element. */
+  :root {
+    --bg: #f2f5ef;
+    --surface: #ffffff;
+    --surface-2: #e7ede3;
+    --ink: #17261d;
+    --muted: #55655b;
+    --line: #d3ddcf;
+    --leaf: #2c6a4c;
+    --leaf-ink: #ffffff;
+    --sun: #d98a1c;
+    --good: #1f7a4a;
+    --good-bg: #dcefe3;
+    --maybe: #8a5a00;
+    --maybe-bg: #f8e8c4;
+    --poor: #a3362b;
+    --poor-bg: #f6dad6;
+    --font-display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+    --font-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1712; --surface: #17221b; --surface-2: #1f2d24; --ink: #e6efe8; --muted: #9db0a3;
+      --line: #2b3b31; --leaf: #6fc496; --leaf-ink: #0c1711; --sun: #f0a73a;
+      --good: #7fd6a2; --good-bg: #1c3a29; --maybe: #f1c46a; --maybe-bg: #3d2f12; --poor: #f09a90; --poor-bg: #44201c;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1712; --surface: #17221b; --surface-2: #1f2d24; --ink: #e6efe8; --muted: #9db0a3;
+    --line: #2b3b31; --leaf: #6fc496; --leaf-ink: #0c1711; --sun: #f0a73a;
+    --good: #7fd6a2; --good-bg: #1c3a29; --maybe: #f1c46a; --maybe-bg: #3d2f12; --poor: #f09a90; --poor-bg: #44201c;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 0 48px;
+  }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+  button, input, select { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--leaf); outline-offset: 2px; }
+
+  header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 14px 10px; }
+  .brand { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .brand h1 { font-size: 26px; }
+  .brand small { color: var(--muted); }
+  nav.tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 10px; background: var(--surface-2); padding: 4px; border-radius: 10px; }
+  nav.tabs button { border: 0; background: transparent; padding: 9px 4px; border-radius: 7px; cursor: pointer; color: var(--muted); font-weight: 500; }
+  nav.tabs button[aria-current="page"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 0 var(--line); font-weight: 600; }
+
+  main { display: flex; flex-direction: column; gap: 14px; padding-top: 6px; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; min-width: 0; }
+  .eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+  .note { color: var(--muted); font-size: 13px; }
+
+  /* Sun-hours control: a strip of afternoon hours, noon to 6pm and beyond */
+  .sunrow { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .sunval { font-family: var(--font-display); font-size: 30px; font-weight: 700; color: var(--sun); font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; accent-color: var(--sun); margin: 10px 0 2px; }
+  .ticks { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+  .chip[aria-pressed="true"] { background: var(--leaf); border-color: var(--leaf); color: var(--leaf-ink); font-weight: 600; }
+
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  details.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+  details.card > summary { list-style: none; cursor: pointer; padding: 12px 14px; display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: center; }
+  details.card > summary::-webkit-details-marker { display: none; }
+  .emoji { font-size: 26px; grid-row: span 2; }
+  .name { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+  .sub { color: var(--muted); font-size: 13px; grid-column: 2; min-width: 0; }
+  .pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+  .pill.good { background: var(--good-bg); color: var(--good); }
+  .pill.maybe { background: var(--maybe-bg); color: var(--maybe); }
+  .pill.poor { background: var(--poor-bg); color: var(--poor); }
+  .range { grid-column: 1 / -1; position: relative; height: 8px; border-radius: 4px; background: var(--surface-2); margin-top: 6px; }
+  .range .band { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: var(--leaf); opacity: 0.55; }
+  .range .mark { position: absolute; top: -4px; width: 4px; height: 16px; border-radius: 2px; background: var(--sun); transform: translateX(-2px); }
+  .detail { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); padding-top: 12px; }
+  .detail h3 { font-size: 15px; }
+  .detail ul, .detail ol { margin: 4px 0 0; padding-left: 20px; }
+  .kv { display: grid; grid-template-columns: 1fr; gap: 6px; }
+  .kv b { font-weight: 600; }
+
+  .btn { border: 1px solid var(--leaf); background: var(--leaf); color: var(--leaf-ink); border-radius: 8px; padding: 8px 14px; cursor: pointer; font-weight: 600; }
+  .btn.ghost { background: transparent; color: var(--leaf); }
+  .btn.danger { background: transparent; border-color: var(--poor); color: var(--poor); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  form.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  form.grid .full { grid-column: 1 / -1; }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); min-width: 0; }
+  input[type=text], input[type=number], select { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; color: var(--ink); width: 100%; min-width: 0; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .tile b { display: block; font-family: var(--font-display); font-size: 22px; font-variant-numeric: tabular-nums; }
+  .neg { color: var(--poor); }
+  .row { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding: 10px 0; border-top: 1px solid var(--line); min-width: 0; }
+  .row:first-child { border-top: 0; }
+  .row > div { min-width: 0; overflow-wrap: anywhere; }
+  .right { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .banner { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--maybe-bg); color: var(--maybe); border-radius: 10px; padding: 10px 14px; font-size: 13px; }
+  .tag { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--maybe); background: var(--maybe-bg); padding: 1px 6px; border-radius: 4px; margin-left: 6px; }
+  .empty { text-align: center; color: var(--muted); padding: 22px 8px; }
+  @media (max-width: 420px) { form.grid { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: no-preference) { details.card, .btn, .chip { transition: border-color 0.15s, background 0.15s; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><h1>Grow Buddy</h1><small>afternoon-sun grower's helper</small></div>
+    <nav class="tabs" id="tabs" aria-label="Sections"></nav>
+  </header>
+  <main id="view"></main>
+</div>
+
+<script>
+const PLANTS = [{"id":"sansevieria","name":"Snake plant (Sansevieria)","emoji":"🌿","category":"ornamental","difficulty":"Easy","minAfternoonHrs":2,"maxAfternoonHrs":8,"heatSensitive":false,"water":"Water only when soil is fully dry, roughly every 1-2 weeks. Overwatering is the main killer.","soil":"Fast-draining mix: potting soil + coarse sand or perlite.","timeToSell":"Small pots from divisions: ~2-4 months. From leaf cuttings: 6+ months.","sellNote":"Hardy and popular. Divisions (pups) give a sellable plant much faster than leaf cuttings.","steps":["Get a healthy plant or pup with some roots.","Pot in a gritty, fast-draining mix in a pot with drainage holes.","Water lightly once, then wait until the soil is completely dry.","Place where it gets light; acclimate to strong afternoon sun over 1-2 weeks.","Separate pups when a few inches tall with their own roots; repot and sell."],"afternoonTips":["Move into direct afternoon sun gradually to avoid bleached or scorched leaves."]},{"id":"aloe","name":"Aloe vera","emoji":"🪴","category":"succulent","difficulty":"Easy","minAfternoonHrs":4,"maxAfternoonHrs":8,"heatSensitive":false,"water":"Deep water, then let the soil dry out. About every 1-2 weeks.","soil":"Cactus/succulent mix or potting soil with plenty of sand.","timeToSell":"Pups: ~2-4 months to a decent small pot.","sellNote":"Produces pups steadily, so stock grows on its own.","steps":["Start from a pup or small plant.","Pot in gritty mix with drainage holes.","Let it settle a few days before first watering.","Give bright light; harden off to strong sun slowly.","Divide pups once they have roots and a few leaves."],"afternoonTips":["Leaves turning red-brown can mean sun stress. Add partial shade if it persists."]},{"id":"pothos","name":"Pothos","emoji":"🍃","category":"ornamental","difficulty":"Easy","minAfternoonHrs":0,"maxAfternoonHrs":2,"heatSensitive":true,"water":"Water when the top 2-3 cm of soil is dry.","soil":"Regular potting mix with some perlite.","timeToSell":"Rooted cuttings in small pots: ~1-2 months.","sellNote":"Very easy to multiply from stem cuttings, great for a first sales item.","steps":["Cut a stem with 2-3 nodes, cutting just below a node.","Root in water or moist mix until roots are 3-5 cm.","Pot several cuttings together for a fuller plant.","Keep in bright, filtered light.","Sell once the pot looks full and new leaves are showing."],"afternoonTips":["Direct afternoon sun scorches pothos leaves. Keep it back from the sun or behind a screen."]},{"id":"jade","name":"Jade plant","emoji":"🌱","category":"succulent","difficulty":"Easy","minAfternoonHrs":3,"maxAfternoonHrs":7,"heatSensitive":false,"water":"Water when soil is dry; wrinkled leaves mean it is thirsty.","soil":"Succulent mix.","timeToSell":"Leaf or stem cuttings: ~3-6 months to a sellable small pot.","sellNote":"Slow but cheap to multiply; good for small decorative pots.","steps":["Take a stem cutting or a healthy leaf.","Let the cut end dry and callus for 2-3 days.","Place on or lightly in succulent mix.","Water sparingly once roots or new growth appear.","Pot up when established."],"afternoonTips":["Strong sun can redden leaf edges. That is normal; leaf bleaching means too much."]},{"id":"basil","name":"Basil","emoji":"🌿","category":"herb","difficulty":"Easy","minAfternoonHrs":4,"maxAfternoonHrs":7,"heatSensitive":false,"water":"Keep evenly moist, not soggy. Water daily in hot weather if the soil dries fast.","soil":"Rich, well-draining potting mix.","timeToSell":"From seed: ~6-8 weeks to a sellable pot.","sellNote":"Sells well as potted herbs. Pinch flower buds to keep it bushy.","steps":["Sow seeds shallowly in moist mix, keep warm.","Seedlings appear in about a week.","Thin or transplant at 2-3 pairs of leaves.","Pinch the top regularly to encourage branching.","Remove flower buds as they appear."],"afternoonTips":["If leaves wilt in the late afternoon but perk up by evening, that is heat. Water in the morning and shade briefly if needed."]},{"id":"mint","name":"Mint","emoji":"🌿","category":"herb","difficulty":"Easy","minAfternoonHrs":2,"maxAfternoonHrs":5,"heatSensitive":true,"water":"Keep consistently moist.","soil":"Rich potting mix. Grow in its own pot because it spreads.","timeToSell":"Cuttings: ~3-5 weeks to a sellable pot.","sellNote":"Roots very fast from cuttings.","steps":["Take 10-15 cm stem cuttings and remove the lower leaves.","Root in water or moist mix.","Pot when roots are a few cm long.","Keep moist and trim to encourage bushiness."],"afternoonTips":["Mint wilts and crisps in harsh afternoon heat. Keep the soil moist and give it some shade."]},{"id":"sili","name":"Chili pepper (sili)","emoji":"🌶️","category":"vegetable","difficulty":"Medium","minAfternoonHrs":5,"maxAfternoonHrs":9,"heatSensitive":false,"water":"Water when the top soil is dry; avoid waterlogging.","soil":"Rich, well-draining mix with compost.","timeToSell":"Seedlings: ~4-6 weeks. Fruiting plants: ~3-4 months.","sellNote":"Seedlings and potted fruiting plants both sell.","steps":["Sow seeds in seed-starting mix, keep warm and moist.","Transplant seedlings at 4-6 true leaves.","Pot in a larger container with compost.","Feed lightly every 2-3 weeks once flowering starts.","Harvest fruit or sell potted plants with flowers or green fruit."],"afternoonTips":["Needs a lot of light. With only ~4 hrs, expect slower growth and fewer fruits."]},{"id":"pechay","name":"Pechay (bok choy)","emoji":"🥬","category":"vegetable","difficulty":"Easy","minAfternoonHrs":3,"maxAfternoonHrs":5,"heatSensitive":true,"water":"Keep evenly moist; do not let it dry out.","soil":"Loose, rich soil with compost.","timeToSell":"About 30-45 days from sowing for harvest.","sellNote":"Fast crop. Good for quick learning cycles.","steps":["Sow seeds directly in loose, moist soil.","Thin to a few cm apart once seedlings are up.","Water daily in hot weather.","Harvest whole plants when leaves are full-size."],"afternoonTips":["Heat makes it bolt and turn bitter. Use shade cloth in the hottest hours."]},{"id":"calamansi","name":"Calamansi","emoji":"🍋","category":"fruit","difficulty":"Medium","minAfternoonHrs":6,"maxAfternoonHrs":9,"heatSensitive":false,"water":"Regular deep watering; do not let the pot dry out completely.","soil":"Rich, well-draining mix with compost.","timeToSell":"Seedlings take months; fruiting plants can take 1-2 years.","sellNote":"Higher-value but slow. Buy young grafted plants if you want to sell sooner.","steps":["Start from a grafted or marcotted plant for faster fruiting.","Pot in a large container with drainage.","Feed with balanced fertilizer every month or two.","Prune lightly for shape.","Sell as young potted trees or wait for fruit."],"afternoonTips":["Needs lots of sun. Afternoon-only spots under ~6 hrs will slow fruiting."]},{"id":"gumamela","name":"Gumamela (hibiscus)","emoji":"🌺","category":"flowering","difficulty":"Easy","minAfternoonHrs":5,"maxAfternoonHrs":9,"heatSensitive":false,"water":"Water regularly; it likes moisture but not standing water.","soil":"Rich, well-draining soil.","timeToSell":"Rooted cuttings: ~2-4 months; flowering plants a bit longer.","sellNote":"Colorful varieties sell well when flowering.","steps":["Take stem cuttings ~15-20 cm long, remove lower leaves.","Dip in rooting hormone if you have it, plant in moist mix.","Keep warm and humid until new leaves show.","Pot up and feed lightly to encourage flowers."],"afternoonTips":["Afternoon sun suits it. Watch for wilting on very hot days and water well."]},{"id":"zz","name":"ZZ plant","emoji":"🪴","category":"ornamental","difficulty":"Easy","minAfternoonHrs":0,"maxAfternoonHrs":2,"heatSensitive":true,"water":"Water when soil is dry through; it stores water in its rhizomes and tolerates missed waterings.","soil":"Well-draining potting mix with perlite.","timeToSell":"Slow. Divisions: ~3-6 months. Leaf cuttings: a year or more.","sellNote":"Popular and pricey per plant, but slow to multiply. Divide mature clumps.","steps":["Start from a clump with several stems and fat rhizomes.","Pot in loose, fast-draining mix with drainage holes.","Water thoroughly, then wait until fully dry.","Keep in bright, indirect light.","Divide rhizomes when the pot is crowded and sell the divisions."],"afternoonTips":["Direct afternoon sun can scorch the glossy leaves. Keep it in filtered light."]},{"id":"spider","name":"Spider plant","emoji":"🌿","category":"ornamental","difficulty":"Easy","minAfternoonHrs":0,"maxAfternoonHrs":2,"heatSensitive":true,"water":"Keep lightly moist; let the top soil dry a little between waterings.","soil":"Regular potting mix.","timeToSell":"Plantlets (spiderettes): ~1-2 months to a small pot.","sellNote":"Makes baby plantlets on its own, so stock is nearly free.","steps":["Pot up a healthy plant in regular mix.","Wait for runners with plantlets to form.","Root plantlets in moist mix while still attached, or snip and root.","Pot rooted plantlets individually.","Sell once established."],"afternoonTips":["Brown leaf tips and scorch are common in hot afternoon sun. Give filtered light."]},{"id":"philodendron","name":"Heartleaf philodendron","emoji":"💚","category":"ornamental","difficulty":"Easy","minAfternoonHrs":0,"maxAfternoonHrs":2,"heatSensitive":true,"water":"Water when the top few cm of soil are dry.","soil":"Airy potting mix with some perlite or bark.","timeToSell":"Rooted cuttings: ~1-2 months.","sellNote":"Roots easily from stem cuttings, similar to pothos.","steps":["Cut a stem with 2-3 nodes.","Root in water or moist mix.","Pot a few cuttings together.","Keep in bright, filtered light.","Sell once full and growing."],"afternoonTips":["Leaves yellow or scorch in direct afternoon sun. Keep in filtered light."]},{"id":"monstera","name":"Monstera deliciosa","emoji":"🍃","category":"ornamental","difficulty":"Medium","minAfternoonHrs":0,"maxAfternoonHrs":2,"heatSensitive":true,"water":"Water when the top 3-5 cm of soil are dry.","soil":"Chunky aroid mix: potting soil with bark and perlite.","timeToSell":"Node cuttings: ~3-6 months to a sellable rooted plant.","sellNote":"High demand, higher prices. Cutting with a node and aerial root roots fastest.","steps":["Cut below a node, ideally with an aerial root.","Root in water or moss until roots are 5+ cm.","Pot in chunky aroid mix.","Provide a moss pole or support.","Sell rooted cuttings or potted young plants."],"afternoonTips":["Direct afternoon sun bleaches and burns the large leaves. Needs bright but filtered light."]},{"id":"peacelily","name":"Peace lily","emoji":"🤍","category":"ornamental","difficulty":"Easy","minAfternoonHrs":0,"maxAfternoonHrs":1,"heatSensitive":true,"water":"Keep evenly moist; it droops visibly when thirsty and recovers after watering.","soil":"Rich potting mix.","timeToSell":"Divisions: ~2-4 months.","sellNote":"Sells well in flower. Divide crowded clumps.","steps":["Pot in rich, moist mix.","Keep in bright shade.","Water when leaves just begin to droop or the top soil is dry.","Divide crowded clumps and repot.","Sell with flowers if possible."],"afternoonTips":["Poor fit for harsh afternoon sun. Leaves scorch and brown. Needs shade."]},{"id":"rubber","name":"Rubber plant","emoji":"🌳","category":"ornamental","difficulty":"Medium","minAfternoonHrs":1,"maxAfternoonHrs":4,"heatSensitive":true,"water":"Water when the top 3-5 cm of soil are dry.","soil":"Well-draining potting mix.","timeToSell":"Cuttings or air layers: ~4-8 months.","sellNote":"Good mid-value plant. Air layering gives a bigger plant faster.","steps":["Take a stem cutting with a few leaves, or air-layer.","Let the milky sap dry.","Root in moist mix.","Pot in well-draining mix.","Grow on until sturdy and sell."],"afternoonTips":["Tolerates some direct sun but harsh afternoon sun can scorch leaves. Acclimate gradually."]},{"id":"echeveria","name":"Echeveria","emoji":"🌸","category":"succulent","difficulty":"Medium","minAfternoonHrs":3,"maxAfternoonHrs":6,"heatSensitive":true,"water":"Water deeply when soil is fully dry. Keep water off the rosette.","soil":"Gritty succulent mix.","timeToSell":"Leaf propagation: ~4-6 months to a sellable rosette.","sellNote":"Cute and sells well in small pots. Leaf propagation is cheap but slow.","steps":["Twist off a healthy leaf cleanly.","Let it callus for 2-3 days.","Lay on gritty mix and mist lightly.","Wait for roots and a baby rosette.","Pot up the baby and grow on."],"afternoonTips":["Intense afternoon heat can scorch or melt echeveria. Provide light shade in the hottest hours."]},{"id":"portulaca","name":"Portulaca (moss rose)","emoji":"🌼","category":"flowering","difficulty":"Easy","minAfternoonHrs":5,"maxAfternoonHrs":9,"heatSensitive":false,"water":"Water lightly; it is drought-tolerant.","soil":"Sandy, well-draining soil.","timeToSell":"Cuttings: ~3-5 weeks to a sellable pot.","sellNote":"Cheap and fast; blooms open in sun. Flowers may close in shade or later in the day.","steps":["Take stem cuttings or sow seed on the surface.","Keep lightly moist until rooted.","Pot several cuttings together.","Give strong sun.","Sell in bloom."],"afternoonTips":["A great fit for hot afternoon sun."]},{"id":"bougainvillea","name":"Bougainvillea","emoji":"🌺","category":"flowering","difficulty":"Medium","minAfternoonHrs":5,"maxAfternoonHrs":9,"heatSensitive":false,"water":"Water deeply but infrequently; too much water gives leaves but few flowers.","soil":"Well-draining soil.","timeToSell":"Cuttings are slow to root; rooted plants ~4-8 months.","sellNote":"Strong seller in bloom. Roots can be sensitive, so handle gently when repotting.","steps":["Take semi-hardwood cuttings.","Use rooting hormone and a warm, humid spot.","Be patient; rooting can take weeks.","Pot gently without disturbing roots.","Give strong sun to flower."],"afternoonTips":["Loves hot, sunny spots. Afternoon sun suits it."]},{"id":"ixora","name":"Ixora (santan)","emoji":"🌺","category":"flowering","difficulty":"Easy","minAfternoonHrs":4,"maxAfternoonHrs":9,"heatSensitive":false,"water":"Keep moist but not soggy; prefers slightly acidic soil.","soil":"Rich, slightly acidic, well-draining soil.","timeToSell":"Cuttings: ~3-5 months.","sellNote":"Common landscape shrub; potted flowering plants sell well.","steps":["Take stem cuttings and root in moist mix.","Pot in rich, slightly acidic soil.","Water regularly.","Feed lightly for flowers.","Sell when branching and budding."],"afternoonTips":["Does well in sun. Yellow leaves with green veins can mean iron or pH issues."]},{"id":"lemongrass","name":"Lemongrass (tanglad)","emoji":"🌾","category":"herb","difficulty":"Easy","minAfternoonHrs":5,"maxAfternoonHrs":9,"heatSensitive":false,"water":"Water regularly; it likes moisture and warmth.","soil":"Rich, well-draining soil.","timeToSell":"Divisions: ~1-3 months to a sellable clump.","sellNote":"Easy to divide, steady local demand for cooking.","steps":["Take a stalk with roots, or root a store-bought stalk in water.","Plant in a large pot or ground.","Water regularly and give full sun.","Divide clumps as they grow.","Sell divisions or harvest stalks."],"afternoonTips":["Loves heat and sun. A good fit for afternoon-only spots."]},{"id":"cubanoregano","name":"Cuban oregano (oregano)","emoji":"🌿","category":"herb","difficulty":"Easy","minAfternoonHrs":3,"maxAfternoonHrs":6,"heatSensitive":false,"water":"Water when the top soil is dry; the leaves store some water.","soil":"Well-draining potting mix.","timeToSell":"Cuttings: ~3-5 weeks to a sellable pot.","sellNote":"Roots very easily from cuttings and sells well as a herb.","steps":["Take stem cuttings.","Root in water or moist mix.","Pot several together.","Give bright light.","Sell once bushy."],"afternoonTips":["Tolerates sun well. Water it before the hottest afternoon hours."]},{"id":"pandan","name":"Pandan","emoji":"🌿","category":"herb","difficulty":"Easy","minAfternoonHrs":2,"maxAfternoonHrs":6,"heatSensitive":false,"water":"Keep moist; tolerates wet feet better than most.","soil":"Rich, moisture-retentive soil.","timeToSell":"Suckers: ~2-4 months.","sellNote":"Steady local demand. Propagate from rooted suckers.","steps":["Take a sucker with roots.","Plant in a large pot with rich soil.","Keep moist.","Give bright light to partial sun.","Separate more suckers as it grows."],"afternoonTips":["Handles afternoon sun fine if kept watered."]},{"id":"kangkong","name":"Kangkong (water spinach)","emoji":"🥬","category":"vegetable","difficulty":"Easy","minAfternoonHrs":5,"maxAfternoonHrs":9,"heatSensitive":false,"water":"Keep soil constantly wet; it likes very moist or even flooded conditions.","soil":"Rich, moist soil.","timeToSell":"About 3-5 weeks to first harvest.","sellNote":"Fast and cheap; regrows after cutting. Good for market-style bundles.","steps":["Plant stem cuttings or seeds in rich, wet soil.","Keep soil constantly moist.","Cut stems to harvest; it regrows.","Feed with compost or nitrogen for leafy growth."],"afternoonTips":["Loves hot sun and water. Keep soil wet in the afternoon."]},{"id":"malunggay","name":"Malunggay (moringa)","emoji":"🌳","category":"vegetable","difficulty":"Easy","minAfternoonHrs":5,"maxAfternoonHrs":9,"heatSensitive":false,"water":"Drought-tolerant once established; avoid waterlogging.","soil":"Well-draining soil.","timeToSell":"Cuttings: ~2-4 months to a sellable potted plant.","sellNote":"Fast-growing; potted cuttings sell steadily for home gardens.","steps":["Plant a hardwood cutting or seed in well-draining soil.","Water lightly until rooted.","Give full sun.","Prune the tip to encourage branching.","Sell potted young plants."],"afternoonTips":["A strong fit for sun. It needs lots of light."]},{"id":"eggplant","name":"Eggplant (talong)","emoji":"🍆","category":"vegetable","difficulty":"Medium","minAfternoonHrs":5,"maxAfternoonHrs":9,"heatSensitive":false,"water":"Water regularly; keep soil evenly moist.","soil":"Rich soil with compost.","timeToSell":"Seedlings: ~4-6 weeks. Fruiting plants: ~3-4 months.","sellNote":"Seedlings sell well. Watch for pests like fruit and shoot borer.","steps":["Sow seeds in seed-starting mix.","Transplant at 4-6 true leaves.","Pot in a large container with compost.","Feed every 2-3 weeks once flowering.","Harvest fruit or sell seedlings."],"afternoonTips":["Needs lots of sun. Water regularly in the afternoon heat."]},{"id":"tomato","name":"Tomato","emoji":"🍅","category":"vegetable","difficulty":"Hard","minAfternoonHrs":5,"maxAfternoonHrs":8,"heatSensitive":false,"water":"Water deeply and evenly; irregular watering causes cracking and blossom end rot.","soil":"Rich, well-draining soil with compost.","timeToSell":"Seedlings: ~4-6 weeks. Fruiting plants: ~2.5-3 months.","sellNote":"Seedlings sell better than fruit for hobby scale. Heat-tolerant varieties set fruit better.","steps":["Sow seeds in seed-starting mix.","Transplant seedlings deep, burying part of the stem.","Stake or cage the plants.","Water evenly and feed regularly once flowering.","Harvest or sell seedlings."],"afternoonTips":["Many varieties struggle to set fruit in very hot weather. Choose heat-tolerant types."]},{"id":"okra","name":"Okra","emoji":"🌱","category":"vegetable","difficulty":"Easy","minAfternoonHrs":6,"maxAfternoonHrs":9,"heatSensitive":false,"water":"Water regularly; tolerates heat well.","soil":"Rich, well-draining soil.","timeToSell":"Seedlings: ~3-4 weeks. First harvest: ~2 months.","sellNote":"Easy, heat-loving crop. Harvest pods young.","steps":["Sow seeds directly or in pots; soak seeds overnight to speed germination.","Thin or transplant seedlings.","Water regularly and feed lightly.","Harvest pods young, every other day."],"afternoonTips":["A great fit for hot afternoon sun."]},{"id":"lettuce","name":"Lettuce","emoji":"🥬","category":"vegetable","difficulty":"Hard","minAfternoonHrs":2,"maxAfternoonHrs":4,"heatSensitive":true,"water":"Keep evenly moist; shallow roots dry out fast.","soil":"Loose, rich soil.","timeToSell":"About 4-7 weeks from sowing.","sellNote":"Hot weather makes it bolt and turn bitter. Heat-tolerant varieties help.","steps":["Sow seeds on the surface of moist soil.","Keep cool and moist until sprouted.","Thin seedlings.","Water often and keep it shaded from afternoon heat.","Harvest outer leaves."],"afternoonTips":["Afternoon heat is the biggest challenge. Use shade cloth and choose heat-tolerant varieties."]},{"id":"cactus","name":"Cactus (small types)","emoji":"🌵","category":"succulent","difficulty":"Easy","minAfternoonHrs":5,"maxAfternoonHrs":9,"heatSensitive":false,"water":"Water deeply only when completely dry. Very little in the rainy season.","soil":"Very gritty cactus mix.","timeToSell":"Offsets: ~3-6 months.","sellNote":"Cheap to multiply from offsets; sells well as small pots.","steps":["Remove an offset or take a cutting.","Let it callus for several days.","Plant in gritty mix.","Water lightly once it has rooted.","Pot up and sell."],"afternoonTips":["Good fit for strong sun. Acclimate new plants gradually to avoid sunburn."]}];
+const SYMPTOMS = {"causes":{"overwater":{"title":"Overwatering / poor drainage","why":"Roots sit in wet soil and cannot get air.","fix":"Check the pot has drainage holes. Let soil dry more between waterings. If the soil stays soggy or smells sour, repot into fresh, faster-draining mix and trim dark mushy roots."},"underwater":{"title":"Underwatering","why":"Soil is dry and the plant cannot take up enough water.","fix":"Water deeply until it runs out the bottom, then check how fast the pot dries. Water on a steadier schedule."},"sunburn":{"title":"Sunburn / heat stress","why":"Strong afternoon sun damages leaf tissue.","fix":"Move back from the sun or add 30-50% shade cloth. Acclimate plants to stronger sun gradually."},"lowlight":{"title":"Not enough light","why":"The plant stretches or slows down to find light.","fix":"Move to a brighter spot or add reflected light. Rotate the pot regularly."},"nutrient":{"title":"Nutrient shortage","why":"The plant is short on nitrogen or other nutrients.","fix":"Feed lightly with a balanced fertilizer at half strength. Do not fertilize a stressed, dry plant."},"pests":{"title":"Pests (mites, aphids, mealybugs, scale)","why":"Small insects feed on the plant and weaken it.","fix":"Inspect leaf undersides and stem joints. Isolate the plant, wipe or rinse pests off, and use insecticidal soap or neem oil. Repeat weekly for a few weeks."},"fungal":{"title":"Fungal or bacterial disease","why":"Wet leaves and poor airflow encourage spots and rot.","fix":"Remove affected leaves, water at the soil not the leaves, improve airflow, and avoid evening watering."},"rootrot":{"title":"Root or stem rot","why":"Persistent wet soil lets rot organisms attack the base.","fix":"Unpot and check roots. Cut away black or mushy parts, repot in fresh dry mix, and hold off watering for several days. If the stem base is mushy, take cuttings from healthy parts."},"salt":{"title":"Salt build-up or tap water minerals","why":"Fertilizer salts collect in the soil and burn leaf tips.","fix":"Flush the pot with plain water until it drains freely, and ease off on fertilizer."},"potbound":{"title":"Root-bound / pot too small","why":"Roots have filled the pot and cannot support the plant.","fix":"Repot into a pot one size larger with fresh mix."},"dryair":{"title":"Dry air or heat","why":"Hot, dry air dries out leaf edges faster than roots can supply water.","fix":"Keep soil evenly moist, group plants, and avoid hot reflected heat from walls."},"aging":{"title":"Normal aging","why":"Oldest leaves yellow and drop as the plant grows.","fix":"If only one or two bottom leaves are affected and the rest looks healthy, no action is needed."}},"symptoms":[{"id":"yellow_lower","label":"Yellow leaves (lower/older)","causes":["overwater","nutrient","aging","underwater"]},{"id":"yellow_new","label":"Yellow new leaves","causes":["nutrient","overwater","lowlight"]},{"id":"brown_tips","label":"Brown crispy tips or edges","causes":["underwater","salt","dryair","sunburn"]},{"id":"brown_spots","label":"Brown or black spots on leaves","causes":["fungal","sunburn","pests"]},{"id":"bleached","label":"Pale, bleached or scorched patches","causes":["sunburn"]},{"id":"wilt_wet","label":"Wilting but soil is wet","causes":["overwater","rootrot"]},{"id":"wilt_dry","label":"Wilting and soil is dry","causes":["underwater","potbound","dryair"]},{"id":"wilt_afternoon","label":"Wilts in the afternoon, perks up by evening","causes":["dryair","sunburn","underwater"]},{"id":"mushy_base","label":"Mushy or soft stem/base","causes":["rootrot","overwater"]},{"id":"leggy","label":"Tall, stretched, pale growth","causes":["lowlight","nutrient"]},{"id":"curling","label":"Leaves curling or cupping","causes":["sunburn","underwater","pests"]},{"id":"white_powder","label":"White powdery coating","causes":["fungal"]},{"id":"webbing_bugs","label":"Visible bugs, webbing or cottony fluff","causes":["pests"]},{"id":"sticky","label":"Sticky residue on leaves","causes":["pests"]},{"id":"holes","label":"Holes or chewed leaves","causes":["pests"]},{"id":"no_growth","label":"No new growth","causes":["lowlight","nutrient","potbound","underwater"]}]};
+
+// Core app logic. Mirrors the Dart code in lib/models.dart and lib/data/symptoms.dart.
+
+/** @returns {{verdict:'good'|'maybe'|'poor', headline:string, tips:string[]}} */
+function checkFit(p, hrs) {
+  const range = `${p.minAfternoonHrs}-${p.maxAfternoonHrs} hrs`;
+  const have = Number(hrs).toFixed(1);
+  const tips = [];
+  if (hrs < p.minAfternoonHrs) {
+    const gap = p.minAfternoonHrs - hrs;
+    tips.push(`${p.name} likes about ${range} of direct sun. You have ${have}.`);
+    tips.push('Use the brightest spot, add a light-colored wall or reflector nearby, or pick a lower-light plant.');
+    tips.push(...p.afternoonTips);
+    return { verdict: gap <= 1 ? 'maybe' : 'poor', headline: 'Not enough sun', tips };
+  }
+  if (hrs > p.maxAfternoonHrs) {
+    const gap = hrs - p.maxAfternoonHrs;
+    tips.push(`${p.name} is happiest with about ${range} of direct sun. You have ${have}.`);
+    tips.push('Put 30-50% shade cloth over the plant during the hottest hours, or move it back from the sun.');
+    tips.push(...p.afternoonTips);
+    return { verdict: gap <= 1 ? 'maybe' : 'poor', headline: 'Too much afternoon sun', tips };
+  }
+  if (p.heatSensitive && hrs >= 4) {
+    tips.push(`Light amount is OK, but afternoon sun is hot and ${p.name} scorches easily.`);
+    tips.push('Shade cloth or a spot with filtered light will protect it.');
+    tips.push(...p.afternoonTips);
+    return { verdict: 'maybe', headline: 'Works with some protection', tips };
+  }
+  tips.push(`Your afternoon sun is within the ${range} ${p.name} likes.`);
+  tips.push(...p.afternoonTips);
+  return { verdict: 'good', headline: 'Good fit', tips };
+}
+
+/**
+ * Rank causes by how many selected symptoms point at them.
+ * Each symptom hands out a total weight of 1, split by position (earlier causes
+ * weigh more), so a symptom with a single possible cause counts for more than
+ * one that could be many things.
+ */
+function rankCauses(selected, data) {
+  const sel = new Set(selected);
+  const scores = new Map();
+  for (const s of data.symptoms) {
+    if (!sel.has(s.id)) continue;
+    const n = s.causes.length;
+    const total = (n * (n + 1)) / 2;
+    s.causes.forEach((cid, i) => {
+      scores.set(cid, (scores.get(cid) || 0) + (n - i) / total);
+    });
+  }
+  return [...scores.entries()]
+    .map(([id, score]) => ({ id, score, ...data.causes[id] }))
+    .sort((a, b) => {
+      const d = b.score - a.score;
+      return Math.abs(d) > 1e-9 ? d : a.id.localeCompare(b.id);
+    });
+}
+
+/** Sales totals. sale: {qty, unitPrice, cost}. */
+function salesSummary(sales) {
+  let revenue = 0;
+  let cost = 0;
+  for (const s of sales) {
+    revenue += s.qty * s.unitPrice;
+    cost += s.cost;
+  }
+  return { revenue, cost, profit: revenue - cost };
+}
+
+/** Margin as a fraction of revenue, or null when there is no revenue. */
+function margin(summary) {
+  return summary.revenue > 0 ? summary.profit / summary.revenue : null;
+}
+
+
+
+
+const TABS = [['guide', 'Guide'], ['mine', 'My plants'], ['debug', 'Debug'], ['sales', 'Sales']];
+const KEY = 'growbuddy.web.v1';
+const CATS = ['all', ...Array.from(new Set(PLANTS.map((p) => p.category)))];
+const peso = (n) => (n < 0 ? '-' : '') + '₱' + Math.abs(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const today = () => new Date().toISOString().slice(0, 10);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const guide = (id) => PLANTS.find((p) => p.id === id);
+const daysAgo = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+
+function seed() {
+  return {
+    sun: 4,
+    plants: [
+      { id: uid(), guideId: 'pothos', nickname: 'Pothos cuttings, batch 1', planted: daysAgo(21), status: 'growing', example: true,
+        logs: [{ date: daysAgo(14), text: 'Roots about 3 cm. Potted 5 to a pot.' }] },
+      { id: uid(), guideId: 'sansevieria', nickname: 'Snake plant pups', planted: daysAgo(60), status: 'ready', example: true, logs: [] },
+    ],
+    sales: [{ id: uid(), item: 'Snake plant, 4" pot', qty: 3, price: 150, cost: 120, date: daysAgo(5), note: '', example: true }],
+  };
+}
+let S = (() => {
+  try { const raw = localStorage.getItem(KEY); if (raw) return JSON.parse(raw); } catch (e) {}
+  return seed();
+})();
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+
+const ui = { tab: 'guide', cat: 'all', picked: new Set(), debugPlant: '', ranked: null, open: {} };
+
+function rangeBar(p, sun) {
+  const max = 9, pct = (h) => (Math.min(h, max) / max) * 100;
+  return `<div class="range" role="img" aria-label="Comfortable ${p.minAfternoonHrs} to ${p.maxAfternoonHrs} hours; yours ${sun}">
+    <span class="band" style="left:${pct(p.minAfternoonHrs)}%;width:${Math.max(pct(p.maxAfternoonHrs) - pct(p.minAfternoonHrs), 1.5)}%"></span>
+    <span class="mark" style="left:${pct(sun)}%"></span></div>`;
+}
+const PILL = { good: 'Good fit', maybe: 'Maybe', poor: 'Poor fit' };
+
+function viewGuide() {
+  const rank = { good: 0, maybe: 1, poor: 2 };
+  const items = PLANTS.filter((p) => ui.cat === 'all' || p.category === ui.cat)
+    .map((p) => ({ p, fit: checkFit(p, S.sun) }))
+    .sort((a, b) => rank[a.fit.verdict] - rank[b.fit.verdict] || a.p.name.localeCompare(b.p.name));
+  const ticks = [0, 2, 4, 6, 8].map((n) => `<span>${n}</span>`).join('');
+  return `
+  <section class="panel">
+    <div class="sunrow"><div><div class="eyebrow">Direct afternoon sun at my spot</div>
+      <div class="note">Count hours the sun hits the plant itself, not bright shade.</div></div>
+      <div class="sunval" id="sunval">${S.sun.toFixed(1)} hrs</div></div>
+    <input id="sun" type="range" min="0" max="8" step="0.5" value="${S.sun}" aria-label="Hours of direct afternoon sun">
+    <div class="ticks" aria-hidden="true">${ticks}</div>
+  </section>
+  <div class="chips" role="group" aria-label="Plant type">${CATS.map((c) => `<button class="chip" data-act="cat" data-v="${c}" aria-pressed="${ui.cat === c}">${c === 'all' ? 'All' : c[0].toUpperCase() + c.slice(1)}</button>`).join('')}</div>
+  <div class="note">${items.filter((x) => x.fit.verdict === 'good').length} of ${items.length} are a good fit for ${S.sun.toFixed(1)} hrs. The bar shows each plant's comfortable range; the amber mark is you.</div>
+  <div class="list" id="plantlist">${items.map(({ p, fit }) => `
+    <details class="card" id="pl-${p.id}" ${ui.open[p.id] ? 'open' : ''} data-id="${p.id}">
+      <summary><span class="emoji" aria-hidden="true">${p.emoji}</span><span class="name">${esc(p.name)}</span><span class="pill ${fit.verdict}">${PILL[fit.verdict]}</span>
+        <span class="sub">${p.difficulty} · ${esc(p.timeToSell)}</span>${rangeBar(p, S.sun)}</summary>
+      <div class="detail">
+        <div><h3>${esc(fit.headline)}</h3><ul>${fit.tips.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></div>
+        <div class="kv"><div><b>Water:</b> ${esc(p.water)}</div><div><b>Soil:</b> ${esc(p.soil)}</div><div><b>Selling:</b> ${esc(p.sellNote)}</div></div>
+        <div><h3>How to start</h3><ol>${p.steps.map((t) => `<li>${esc(t)}</li>`).join('')}</ol></div>
+        <div><button class="btn" data-act="start" data-v="${p.id}">Start growing</button></div>
+      </div></details>`).join('')}</div>`;
+}
+
+function exampleBanner(kind) {
+  const has = [...S.plants, ...S.sales].some((x) => x.example);
+  return has ? `<div class="banner"><span>Showing example ${kind}. Clear them to start your own.</span><button class="btn ghost" data-act="clearex">Clear examples</button></div>` : '';
+}
+
+function viewMine() {
+  const cards = S.plants.map((m) => {
+    const g = guide(m.guideId), days = Math.max(0, Math.floor((Date.now() - new Date(m.planted).getTime()) / 864e5));
+    return `<details class="card" data-id="${m.id}" ${ui.open['m' + m.id] ? 'open' : ''}>
+      <summary><span class="emoji" aria-hidden="true">${g ? g.emoji : '🌱'}</span><span class="name">${esc(m.nickname)}${m.example ? '<span class="tag">Example</span>' : ''}</span><span class="pill ${m.status === 'ready' ? 'good' : m.status === 'sold' ? 'maybe' : 'poor'}" style="${m.status === 'growing' ? 'background:var(--surface-2);color:var(--muted)' : ''}">${m.status}</span>
+        <span class="sub">${g ? esc(g.name) : ''} · day ${days}</span></summary>
+      <div class="detail">
+        <label>Status<select data-act="status" data-v="${m.id}">${['growing', 'ready', 'sold'].map((s) => `<option ${m.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></label>
+        ${g ? `<div class="note">Water: ${esc(g.water)}<br>Time to sellable: ${esc(g.timeToSell)}</div>` : ''}
+        <form data-act="log" data-v="${m.id}" class="grid"><label class="full">Add log entry<input type="text" name="t" maxlength="200" placeholder="Watered, repotted, new leaf, pests seen" required></label><div class="full"><button class="btn" type="submit">Add</button></div></form>
+        <div>${m.logs.length ? m.logs.map((l) => `<div class="row"><div>${esc(l.text)}</div><div class="right note">${esc(l.date)}</div></div>`).join('') : '<div class="note">No log entries yet.</div>'}</div>
+        <div><button class="btn danger" data-act="rm" data-v="${m.id}">Remove plant</button></div>
+      </div></details>`;
+  }).join('');
+  return `${exampleBanner('plants and sales')}${S.plants.length ? `<div class="list">${cards}</div>` : '<div class="panel empty">No plants yet. Open the Guide tab, pick a plant, and tap "Start growing".</div>'}`;
+}
+
+function viewDebug() {
+  const opts = S.plants.map((m) => `<option value="m:${m.id}" ${ui.debugPlant === 'm:' + m.id ? 'selected' : ''}>Mine: ${esc(m.nickname)}</option>`).join('') +
+    PLANTS.map((p) => `<option value="g:${p.id}" ${ui.debugPlant === 'g:' + p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+  let ctx = '';
+  const dp = ui.debugPlant;
+  const gp = dp.startsWith('g:') ? guide(dp.slice(2)) : dp.startsWith('m:') ? guide((S.plants.find((m) => m.id === dp.slice(2)) || {}).guideId) : null;
+  if (gp) { const f = checkFit(gp, S.sun); if (f.verdict !== 'good') ctx = `<div class="banner" role="note"><span>Note: ${esc(gp.name)} is a ${PILL[f.verdict].toLowerCase()} for ${S.sun.toFixed(1)} hrs of afternoon sun (${esc(f.headline.toLowerCase())}). That may be part of the problem.</span></div>`; }
+  const res = ui.ranked ? (ui.ranked.length ? ui.ranked.slice(0, 5).map((r, i) => `
+    <details class="card" ${i === 0 ? 'open' : ''}><summary style="grid-template-columns:1fr"><span class="name">${i + 1}. ${esc(r.title)}</span><span class="sub" style="grid-column:1">${esc(r.why)}</span></summary>
+    <div class="detail"><div><b>What to do:</b> ${esc(r.fix)}</div></div></details>`).join('') : '<div class="panel empty">Nothing matched.</div>') : '';
+  return `
+  <section class="panel"><label for="dplant">Which plant?<select id="dplant"><option value="">Not sure / not listed</option>${opts}</select></label></section>
+  ${ctx}
+  <section class="panel"><div class="eyebrow">What do you see?</div><div class="chips" style="margin-top:8px">${SYMPTOMS.symptoms.map((s) => `<button class="chip" data-act="sym" data-v="${s.id}" aria-pressed="${ui.picked.has(s.id)}">${esc(s.label)}</button>`).join('')}</div>
+    <div style="margin-top:12px"><button class="btn" data-act="check" ${ui.picked.size ? '' : 'disabled'}>Check likely causes</button></div></section>
+  ${ui.ranked ? '<h2 style="font-size:18px">Likely causes</h2>' : ''}<div class="list">${res}</div>
+  <div class="note">Photo diagnosis with AI is in the Flutter app, through the backend server. This preview runs the rule-based check only.</div>`;
+}
+
+function viewSales() {
+  const sum = salesSummary(S.sales.map((s) => ({ qty: s.qty, unitPrice: s.price, cost: s.cost }))), m = margin(sum);
+  const cls = (n) => (n < 0 ? 'neg' : '');
+  return `${exampleBanner('sales and plants')}
+  <section class="panel tiles">
+    <div class="tile"><span class="eyebrow">Revenue</span><b>${peso(sum.revenue)}</b></div>
+    <div class="tile"><span class="eyebrow">Costs</span><b>${peso(sum.cost)}</b></div>
+    <div class="tile"><span class="eyebrow">Profit</span><b class="${cls(sum.profit)}">${peso(sum.profit)}</b></div>
+    <div class="tile"><span class="eyebrow">Margin</span><b class="${m !== null && m < 0 ? 'neg' : ''}">${m === null ? '-' : (m * 100).toFixed(0) + '%'}</b></div>
+  </section>
+  <section class="panel"><h2 style="font-size:17px;margin-bottom:10px">Record a sale</h2>
+    <form class="grid" data-act="sale">
+      <label class="full">Item<input type="text" name="item" maxlength="80" placeholder='Pothos, 4" pot' required></label>
+      <label>Quantity<input type="number" name="qty" min="1" step="1" value="1" required></label>
+      <label>Price each (₱)<input type="number" name="price" min="0" step="0.01" required></label>
+      <label>Total cost: pot, soil, seeds (₱)<input type="number" name="cost" min="0" step="0.01" value="0" required></label>
+      <label>Note<input type="text" name="note" maxlength="120"></label>
+      <div class="full"><button class="btn" type="submit">Save sale</button></div>
+    </form></section>
+  <section class="panel">${S.sales.length ? [...S.sales].reverse().map((s) => `<div class="row"><div>${s.qty} × ${esc(s.item)}${s.example ? '<span class="tag">Example</span>' : ''}<div class="note">${esc(s.date)}${s.note ? ' · ' + esc(s.note) : ''}</div></div>
+      <div class="right">${peso(s.qty * s.price)}<div class="note ${cls(s.qty * s.price - s.cost)}">profit ${peso(s.qty * s.price - s.cost)}</div><button class="btn danger" style="margin-top:6px;padding:3px 10px" data-act="rmsale" data-v="${s.id}">Delete</button></div></div>`).join('') : '<div class="empty">No sales yet.</div>'}</section>`;
+}
+
+function render() {
+  document.getElementById('tabs').innerHTML = TABS.map(([k, l]) => `<button data-act="tab" data-v="${k}" ${ui.tab === k ? 'aria-current="page"' : ''}>${l}</button>`).join('');
+  document.getElementById('view').innerHTML = { guide: viewGuide, mine: viewMine, debug: viewDebug, sales: viewSales }[ui.tab]();
+}
+function updateGuideFit() {
+  // slider drag: re-render the list but keep the slider element (and its focus) alive
+  const val = document.getElementById('sunval'); if (val) val.textContent = S.sun.toFixed(1) + ' hrs';
+  const keep = document.getElementById('sun');
+  const list = document.getElementById('plantlist');
+  const scrollY = window.scrollY;
+  const html = viewGuide();
+  const tmp = document.createElement('div'); tmp.innerHTML = html;
+  list.innerHTML = tmp.querySelector('#plantlist').innerHTML;
+  const note = document.querySelector('#view > .note'); const nn = tmp.querySelector(':scope > .note'); if (note && nn) note.textContent = nn.textContent;
+  window.scrollTo(0, scrollY); if (keep) keep.focus({ preventScroll: true });
+}
+
+document.addEventListener('toggle', (e) => {
+  const d = e.target; if (!(d instanceof HTMLDetailsElement)) return;
+  const id = d.dataset.id; if (!id) return;
+  ui.open[ui.tab === 'mine' ? 'm' + id : id] = d.open;
+}, true);
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'sun') { S.sun = parseFloat(e.target.value); save(); updateGuideFit(); }
+});
+document.addEventListener('change', (e) => {
+  const t = e.target;
+  if (t.id === 'dplant') { ui.debugPlant = t.value; ui.ranked = null; render(); }
+  if (t.dataset.act === 'status') { const m = S.plants.find((x) => x.id === t.dataset.v); if (m) { m.status = t.value; save(); render(); } }
+});
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-act]'); if (!b || b.tagName === 'FORM' || b.tagName === 'SELECT') return;
+  const a = b.dataset.act, v = b.dataset.v;
+  if (a === 'tab') { ui.tab = v; ui.ranked = null; render(); window.scrollTo(0, 0); }
+  else if (a === 'cat') { ui.cat = v; render(); }
+  else if (a === 'start') {
+    const g = guide(v); S.plants.push({ id: uid(), guideId: v, nickname: g.name.split(' (')[0], planted: today(), status: 'growing', logs: [] });
+    save(); ui.tab = 'mine'; render(); window.scrollTo(0, 0);
+  }
+  else if (a === 'rm') { S.plants = S.plants.filter((m) => m.id !== v); save(); render(); }
+  else if (a === 'rmsale') { S.sales = S.sales.filter((s) => s.id !== v); save(); render(); }
+  else if (a === 'clearex') { S.plants = S.plants.filter((x) => !x.example); S.sales = S.sales.filter((x) => !x.example); save(); render(); }
+  else if (a === 'sym') { ui.picked.has(v) ? ui.picked.delete(v) : ui.picked.add(v); ui.ranked = null; render(); }
+  else if (a === 'check') { ui.ranked = rankCauses([...ui.picked], SYMPTOMS); render(); }
+});
+document.addEventListener('submit', (e) => {
+  const f = e.target; e.preventDefault();
+  const fd = new FormData(f);
+  if (f.dataset.act === 'log') {
+    const m = S.plants.find((x) => x.id === f.dataset.v); const t = String(fd.get('t') || '').trim();
+    if (m && t) { m.logs.unshift({ date: today(), text: t }); ui.open['m' + m.id] = true; save(); render(); }
+  } else if (f.dataset.act === 'sale') {
+    const qty = parseInt(fd.get('qty'), 10), price = parseFloat(fd.get('price')), cost = parseFloat(fd.get('cost'));
+    if (!(qty >= 1) || !(price >= 0) || !(cost >= 0)) return;
+    S.sales.push({ id: uid(), item: String(fd.get('item')).trim(), qty, price, cost, date: today(), note: String(fd.get('note') || '').trim() });
+    save(); render();
+  }
+});
+render();
+</script>

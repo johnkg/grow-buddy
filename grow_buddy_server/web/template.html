@@ -1,0 +1,322 @@
+<title>Grow Buddy</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+  /* Layout: one narrow column, sticky tab bar, a sun-hours strip as the signature element. */
+  :root {
+    --bg: #f2f5ef;
+    --surface: #ffffff;
+    --surface-2: #e7ede3;
+    --ink: #17261d;
+    --muted: #55655b;
+    --line: #d3ddcf;
+    --leaf: #2c6a4c;
+    --leaf-ink: #ffffff;
+    --sun: #d98a1c;
+    --good: #1f7a4a;
+    --good-bg: #dcefe3;
+    --maybe: #8a5a00;
+    --maybe-bg: #f8e8c4;
+    --poor: #a3362b;
+    --poor-bg: #f6dad6;
+    --font-display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+    --font-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1712; --surface: #17221b; --surface-2: #1f2d24; --ink: #e6efe8; --muted: #9db0a3;
+      --line: #2b3b31; --leaf: #6fc496; --leaf-ink: #0c1711; --sun: #f0a73a;
+      --good: #7fd6a2; --good-bg: #1c3a29; --maybe: #f1c46a; --maybe-bg: #3d2f12; --poor: #f09a90; --poor-bg: #44201c;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1712; --surface: #17221b; --surface-2: #1f2d24; --ink: #e6efe8; --muted: #9db0a3;
+    --line: #2b3b31; --leaf: #6fc496; --leaf-ink: #0c1711; --sun: #f0a73a;
+    --good: #7fd6a2; --good-bg: #1c3a29; --maybe: #f1c46a; --maybe-bg: #3d2f12; --poor: #f09a90; --poor-bg: #44201c;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 0 48px;
+  }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+  button, input, select { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--leaf); outline-offset: 2px; }
+
+  header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 14px 10px; }
+  .brand { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .brand h1 { font-size: 26px; }
+  .brand small { color: var(--muted); }
+  nav.tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 10px; background: var(--surface-2); padding: 4px; border-radius: 10px; }
+  nav.tabs button { border: 0; background: transparent; padding: 9px 4px; border-radius: 7px; cursor: pointer; color: var(--muted); font-weight: 500; }
+  nav.tabs button[aria-current="page"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 0 var(--line); font-weight: 600; }
+
+  main { display: flex; flex-direction: column; gap: 14px; padding-top: 6px; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; min-width: 0; }
+  .eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+  .note { color: var(--muted); font-size: 13px; }
+
+  /* Sun-hours control: a strip of afternoon hours, noon to 6pm and beyond */
+  .sunrow { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .sunval { font-family: var(--font-display); font-size: 30px; font-weight: 700; color: var(--sun); font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; accent-color: var(--sun); margin: 10px 0 2px; }
+  .ticks { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+  .chip[aria-pressed="true"] { background: var(--leaf); border-color: var(--leaf); color: var(--leaf-ink); font-weight: 600; }
+
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  details.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+  details.card > summary { list-style: none; cursor: pointer; padding: 12px 14px; display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: center; }
+  details.card > summary::-webkit-details-marker { display: none; }
+  .emoji { font-size: 26px; grid-row: span 2; }
+  .name { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+  .sub { color: var(--muted); font-size: 13px; grid-column: 2; min-width: 0; }
+  .pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+  .pill.good { background: var(--good-bg); color: var(--good); }
+  .pill.maybe { background: var(--maybe-bg); color: var(--maybe); }
+  .pill.poor { background: var(--poor-bg); color: var(--poor); }
+  .range { grid-column: 1 / -1; position: relative; height: 8px; border-radius: 4px; background: var(--surface-2); margin-top: 6px; }
+  .range .band { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: var(--leaf); opacity: 0.55; }
+  .range .mark { position: absolute; top: -4px; width: 4px; height: 16px; border-radius: 2px; background: var(--sun); transform: translateX(-2px); }
+  .detail { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); padding-top: 12px; }
+  .detail h3 { font-size: 15px; }
+  .detail ul, .detail ol { margin: 4px 0 0; padding-left: 20px; }
+  .kv { display: grid; grid-template-columns: 1fr; gap: 6px; }
+  .kv b { font-weight: 600; }
+
+  .btn { border: 1px solid var(--leaf); background: var(--leaf); color: var(--leaf-ink); border-radius: 8px; padding: 8px 14px; cursor: pointer; font-weight: 600; }
+  .btn.ghost { background: transparent; color: var(--leaf); }
+  .btn.danger { background: transparent; border-color: var(--poor); color: var(--poor); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  form.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  form.grid .full { grid-column: 1 / -1; }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); min-width: 0; }
+  input[type=text], input[type=number], select { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; color: var(--ink); width: 100%; min-width: 0; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .tile b { display: block; font-family: var(--font-display); font-size: 22px; font-variant-numeric: tabular-nums; }
+  .neg { color: var(--poor); }
+  .row { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding: 10px 0; border-top: 1px solid var(--line); min-width: 0; }
+  .row:first-child { border-top: 0; }
+  .row > div { min-width: 0; overflow-wrap: anywhere; }
+  .right { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .banner { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--maybe-bg); color: var(--maybe); border-radius: 10px; padding: 10px 14px; font-size: 13px; }
+  .tag { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--maybe); background: var(--maybe-bg); padding: 1px 6px; border-radius: 4px; margin-left: 6px; }
+  .empty { text-align: center; color: var(--muted); padding: 22px 8px; }
+  @media (max-width: 420px) { form.grid { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: no-preference) { details.card, .btn, .chip { transition: border-color 0.15s, background 0.15s; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><h1>Grow Buddy</h1><small>afternoon-sun grower's helper</small></div>
+    <nav class="tabs" id="tabs" aria-label="Sections"></nav>
+  </header>
+  <main id="view"></main>
+</div>
+
+<script>
+const PLANTS = /*__PLANTS__*/[];
+const SYMPTOMS = /*__SYMPTOMS__*/{};
+/*__CORE__*/
+
+const TABS = [['guide', 'Guide'], ['mine', 'My plants'], ['debug', 'Debug'], ['sales', 'Sales']];
+const KEY = 'growbuddy.web.v1';
+const CATS = ['all', ...Array.from(new Set(PLANTS.map((p) => p.category)))];
+const peso = (n) => (n < 0 ? '-' : '') + '₱' + Math.abs(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const today = () => new Date().toISOString().slice(0, 10);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const guide = (id) => PLANTS.find((p) => p.id === id);
+const daysAgo = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+
+function seed() {
+  return {
+    sun: 4,
+    plants: [
+      { id: uid(), guideId: 'pothos', nickname: 'Pothos cuttings, batch 1', planted: daysAgo(21), status: 'growing', example: true,
+        logs: [{ date: daysAgo(14), text: 'Roots about 3 cm. Potted 5 to a pot.' }] },
+      { id: uid(), guideId: 'sansevieria', nickname: 'Snake plant pups', planted: daysAgo(60), status: 'ready', example: true, logs: [] },
+    ],
+    sales: [{ id: uid(), item: 'Snake plant, 4" pot', qty: 3, price: 150, cost: 120, date: daysAgo(5), note: '', example: true }],
+  };
+}
+let S = (() => {
+  try { const raw = localStorage.getItem(KEY); if (raw) return JSON.parse(raw); } catch (e) {}
+  return seed();
+})();
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+
+const ui = { tab: 'guide', cat: 'all', picked: new Set(), debugPlant: '', ranked: null, open: {} };
+
+function rangeBar(p, sun) {
+  const max = 9, pct = (h) => (Math.min(h, max) / max) * 100;
+  return `<div class="range" role="img" aria-label="Comfortable ${p.minAfternoonHrs} to ${p.maxAfternoonHrs} hours; yours ${sun}">
+    <span class="band" style="left:${pct(p.minAfternoonHrs)}%;width:${Math.max(pct(p.maxAfternoonHrs) - pct(p.minAfternoonHrs), 1.5)}%"></span>
+    <span class="mark" style="left:${pct(sun)}%"></span></div>`;
+}
+const PILL = { good: 'Good fit', maybe: 'Maybe', poor: 'Poor fit' };
+
+function viewGuide() {
+  const rank = { good: 0, maybe: 1, poor: 2 };
+  const items = PLANTS.filter((p) => ui.cat === 'all' || p.category === ui.cat)
+    .map((p) => ({ p, fit: checkFit(p, S.sun) }))
+    .sort((a, b) => rank[a.fit.verdict] - rank[b.fit.verdict] || a.p.name.localeCompare(b.p.name));
+  const ticks = [0, 2, 4, 6, 8].map((n) => `<span>${n}</span>`).join('');
+  return `
+  <section class="panel">
+    <div class="sunrow"><div><div class="eyebrow">Direct afternoon sun at my spot</div>
+      <div class="note">Count hours the sun hits the plant itself, not bright shade.</div></div>
+      <div class="sunval" id="sunval">${S.sun.toFixed(1)} hrs</div></div>
+    <input id="sun" type="range" min="0" max="8" step="0.5" value="${S.sun}" aria-label="Hours of direct afternoon sun">
+    <div class="ticks" aria-hidden="true">${ticks}</div>
+  </section>
+  <div class="chips" role="group" aria-label="Plant type">${CATS.map((c) => `<button class="chip" data-act="cat" data-v="${c}" aria-pressed="${ui.cat === c}">${c === 'all' ? 'All' : c[0].toUpperCase() + c.slice(1)}</button>`).join('')}</div>
+  <div class="note">${items.filter((x) => x.fit.verdict === 'good').length} of ${items.length} are a good fit for ${S.sun.toFixed(1)} hrs. The bar shows each plant's comfortable range; the amber mark is you.</div>
+  <div class="list" id="plantlist">${items.map(({ p, fit }) => `
+    <details class="card" id="pl-${p.id}" ${ui.open[p.id] ? 'open' : ''} data-id="${p.id}">
+      <summary><span class="emoji" aria-hidden="true">${p.emoji}</span><span class="name">${esc(p.name)}</span><span class="pill ${fit.verdict}">${PILL[fit.verdict]}</span>
+        <span class="sub">${p.difficulty} · ${esc(p.timeToSell)}</span>${rangeBar(p, S.sun)}</summary>
+      <div class="detail">
+        <div><h3>${esc(fit.headline)}</h3><ul>${fit.tips.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></div>
+        <div class="kv"><div><b>Water:</b> ${esc(p.water)}</div><div><b>Soil:</b> ${esc(p.soil)}</div><div><b>Selling:</b> ${esc(p.sellNote)}</div></div>
+        <div><h3>How to start</h3><ol>${p.steps.map((t) => `<li>${esc(t)}</li>`).join('')}</ol></div>
+        <div><button class="btn" data-act="start" data-v="${p.id}">Start growing</button></div>
+      </div></details>`).join('')}</div>`;
+}
+
+function exampleBanner(kind) {
+  const has = [...S.plants, ...S.sales].some((x) => x.example);
+  return has ? `<div class="banner"><span>Showing example ${kind}. Clear them to start your own.</span><button class="btn ghost" data-act="clearex">Clear examples</button></div>` : '';
+}
+
+function viewMine() {
+  const cards = S.plants.map((m) => {
+    const g = guide(m.guideId), days = Math.max(0, Math.floor((Date.now() - new Date(m.planted).getTime()) / 864e5));
+    return `<details class="card" data-id="${m.id}" ${ui.open['m' + m.id] ? 'open' : ''}>
+      <summary><span class="emoji" aria-hidden="true">${g ? g.emoji : '🌱'}</span><span class="name">${esc(m.nickname)}${m.example ? '<span class="tag">Example</span>' : ''}</span><span class="pill ${m.status === 'ready' ? 'good' : m.status === 'sold' ? 'maybe' : 'poor'}" style="${m.status === 'growing' ? 'background:var(--surface-2);color:var(--muted)' : ''}">${m.status}</span>
+        <span class="sub">${g ? esc(g.name) : ''} · day ${days}</span></summary>
+      <div class="detail">
+        <label>Status<select data-act="status" data-v="${m.id}">${['growing', 'ready', 'sold'].map((s) => `<option ${m.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></label>
+        ${g ? `<div class="note">Water: ${esc(g.water)}<br>Time to sellable: ${esc(g.timeToSell)}</div>` : ''}
+        <form data-act="log" data-v="${m.id}" class="grid"><label class="full">Add log entry<input type="text" name="t" maxlength="200" placeholder="Watered, repotted, new leaf, pests seen" required></label><div class="full"><button class="btn" type="submit">Add</button></div></form>
+        <div>${m.logs.length ? m.logs.map((l) => `<div class="row"><div>${esc(l.text)}</div><div class="right note">${esc(l.date)}</div></div>`).join('') : '<div class="note">No log entries yet.</div>'}</div>
+        <div><button class="btn danger" data-act="rm" data-v="${m.id}">Remove plant</button></div>
+      </div></details>`;
+  }).join('');
+  return `${exampleBanner('plants and sales')}${S.plants.length ? `<div class="list">${cards}</div>` : '<div class="panel empty">No plants yet. Open the Guide tab, pick a plant, and tap "Start growing".</div>'}`;
+}
+
+function viewDebug() {
+  const opts = S.plants.map((m) => `<option value="m:${m.id}" ${ui.debugPlant === 'm:' + m.id ? 'selected' : ''}>Mine: ${esc(m.nickname)}</option>`).join('') +
+    PLANTS.map((p) => `<option value="g:${p.id}" ${ui.debugPlant === 'g:' + p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+  let ctx = '';
+  const dp = ui.debugPlant;
+  const gp = dp.startsWith('g:') ? guide(dp.slice(2)) : dp.startsWith('m:') ? guide((S.plants.find((m) => m.id === dp.slice(2)) || {}).guideId) : null;
+  if (gp) { const f = checkFit(gp, S.sun); if (f.verdict !== 'good') ctx = `<div class="banner" role="note"><span>Note: ${esc(gp.name)} is a ${PILL[f.verdict].toLowerCase()} for ${S.sun.toFixed(1)} hrs of afternoon sun (${esc(f.headline.toLowerCase())}). That may be part of the problem.</span></div>`; }
+  const res = ui.ranked ? (ui.ranked.length ? ui.ranked.slice(0, 5).map((r, i) => `
+    <details class="card" ${i === 0 ? 'open' : ''}><summary style="grid-template-columns:1fr"><span class="name">${i + 1}. ${esc(r.title)}</span><span class="sub" style="grid-column:1">${esc(r.why)}</span></summary>
+    <div class="detail"><div><b>What to do:</b> ${esc(r.fix)}</div></div></details>`).join('') : '<div class="panel empty">Nothing matched.</div>') : '';
+  return `
+  <section class="panel"><label for="dplant">Which plant?<select id="dplant"><option value="">Not sure / not listed</option>${opts}</select></label></section>
+  ${ctx}
+  <section class="panel"><div class="eyebrow">What do you see?</div><div class="chips" style="margin-top:8px">${SYMPTOMS.symptoms.map((s) => `<button class="chip" data-act="sym" data-v="${s.id}" aria-pressed="${ui.picked.has(s.id)}">${esc(s.label)}</button>`).join('')}</div>
+    <div style="margin-top:12px"><button class="btn" data-act="check" ${ui.picked.size ? '' : 'disabled'}>Check likely causes</button></div></section>
+  ${ui.ranked ? '<h2 style="font-size:18px">Likely causes</h2>' : ''}<div class="list">${res}</div>
+  <div class="note">Photo diagnosis with AI is in the Flutter app, through the backend server. This preview runs the rule-based check only.</div>`;
+}
+
+function viewSales() {
+  const sum = salesSummary(S.sales.map((s) => ({ qty: s.qty, unitPrice: s.price, cost: s.cost }))), m = margin(sum);
+  const cls = (n) => (n < 0 ? 'neg' : '');
+  return `${exampleBanner('sales and plants')}
+  <section class="panel tiles">
+    <div class="tile"><span class="eyebrow">Revenue</span><b>${peso(sum.revenue)}</b></div>
+    <div class="tile"><span class="eyebrow">Costs</span><b>${peso(sum.cost)}</b></div>
+    <div class="tile"><span class="eyebrow">Profit</span><b class="${cls(sum.profit)}">${peso(sum.profit)}</b></div>
+    <div class="tile"><span class="eyebrow">Margin</span><b class="${m !== null && m < 0 ? 'neg' : ''}">${m === null ? '-' : (m * 100).toFixed(0) + '%'}</b></div>
+  </section>
+  <section class="panel"><h2 style="font-size:17px;margin-bottom:10px">Record a sale</h2>
+    <form class="grid" data-act="sale">
+      <label class="full">Item<input type="text" name="item" maxlength="80" placeholder='Pothos, 4" pot' required></label>
+      <label>Quantity<input type="number" name="qty" min="1" step="1" value="1" required></label>
+      <label>Price each (₱)<input type="number" name="price" min="0" step="0.01" required></label>
+      <label>Total cost: pot, soil, seeds (₱)<input type="number" name="cost" min="0" step="0.01" value="0" required></label>
+      <label>Note<input type="text" name="note" maxlength="120"></label>
+      <div class="full"><button class="btn" type="submit">Save sale</button></div>
+    </form></section>
+  <section class="panel">${S.sales.length ? [...S.sales].reverse().map((s) => `<div class="row"><div>${s.qty} × ${esc(s.item)}${s.example ? '<span class="tag">Example</span>' : ''}<div class="note">${esc(s.date)}${s.note ? ' · ' + esc(s.note) : ''}</div></div>
+      <div class="right">${peso(s.qty * s.price)}<div class="note ${cls(s.qty * s.price - s.cost)}">profit ${peso(s.qty * s.price - s.cost)}</div><button class="btn danger" style="margin-top:6px;padding:3px 10px" data-act="rmsale" data-v="${s.id}">Delete</button></div></div>`).join('') : '<div class="empty">No sales yet.</div>'}</section>`;
+}
+
+function render() {
+  document.getElementById('tabs').innerHTML = TABS.map(([k, l]) => `<button data-act="tab" data-v="${k}" ${ui.tab === k ? 'aria-current="page"' : ''}>${l}</button>`).join('');
+  document.getElementById('view').innerHTML = { guide: viewGuide, mine: viewMine, debug: viewDebug, sales: viewSales }[ui.tab]();
+}
+function updateGuideFit() {
+  // slider drag: re-render the list but keep the slider element (and its focus) alive
+  const val = document.getElementById('sunval'); if (val) val.textContent = S.sun.toFixed(1) + ' hrs';
+  const keep = document.getElementById('sun');
+  const list = document.getElementById('plantlist');
+  const scrollY = window.scrollY;
+  const html = viewGuide();
+  const tmp = document.createElement('div'); tmp.innerHTML = html;
+  list.innerHTML = tmp.querySelector('#plantlist').innerHTML;
+  const note = document.querySelector('#view > .note'); const nn = tmp.querySelector(':scope > .note'); if (note && nn) note.textContent = nn.textContent;
+  window.scrollTo(0, scrollY); if (keep) keep.focus({ preventScroll: true });
+}
+
+document.addEventListener('toggle', (e) => {
+  const d = e.target; if (!(d instanceof HTMLDetailsElement)) return;
+  const id = d.dataset.id; if (!id) return;
+  ui.open[ui.tab === 'mine' ? 'm' + id : id] = d.open;
+}, true);
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'sun') { S.sun = parseFloat(e.target.value); save(); updateGuideFit(); }
+});
+document.addEventListener('change', (e) => {
+  const t = e.target;
+  if (t.id === 'dplant') { ui.debugPlant = t.value; ui.ranked = null; render(); }
+  if (t.dataset.act === 'status') { const m = S.plants.find((x) => x.id === t.dataset.v); if (m) { m.status = t.value; save(); render(); } }
+});
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-act]'); if (!b || b.tagName === 'FORM' || b.tagName === 'SELECT') return;
+  const a = b.dataset.act, v = b.dataset.v;
+  if (a === 'tab') { ui.tab = v; ui.ranked = null; render(); window.scrollTo(0, 0); }
+  else if (a === 'cat') { ui.cat = v; render(); }
+  else if (a === 'start') {
+    const g = guide(v); S.plants.push({ id: uid(), guideId: v, nickname: g.name.split(' (')[0], planted: today(), status: 'growing', logs: [] });
+    save(); ui.tab = 'mine'; render(); window.scrollTo(0, 0);
+  }
+  else if (a === 'rm') { S.plants = S.plants.filter((m) => m.id !== v); save(); render(); }
+  else if (a === 'rmsale') { S.sales = S.sales.filter((s) => s.id !== v); save(); render(); }
+  else if (a === 'clearex') { S.plants = S.plants.filter((x) => !x.example); S.sales = S.sales.filter((x) => !x.example); save(); render(); }
+  else if (a === 'sym') { ui.picked.has(v) ? ui.picked.delete(v) : ui.picked.add(v); ui.ranked = null; render(); }
+  else if (a === 'check') { ui.ranked = rankCauses([...ui.picked], SYMPTOMS); render(); }
+});
+document.addEventListener('submit', (e) => {
+  const f = e.target; e.preventDefault();
+  const fd = new FormData(f);
+  if (f.dataset.act === 'log') {
+    const m = S.plants.find((x) => x.id === f.dataset.v); const t = String(fd.get('t') || '').trim();
+    if (m && t) { m.logs.unshift({ date: today(), text: t }); ui.open['m' + m.id] = true; save(); render(); }
+  } else if (f.dataset.act === 'sale') {
+    const qty = parseInt(fd.get('qty'), 10), price = parseFloat(fd.get('price')), cost = parseFloat(fd.get('cost'));
+    if (!(qty >= 1) || !(price >= 0) || !(cost >= 0)) return;
+    S.sales.push({ id: uid(), item: String(fd.get('item')).trim(), qty, price, cost, date: today(), note: String(fd.get('note') || '').trim() });
+    save(); render();
+  }
+});
+render();
+</script>

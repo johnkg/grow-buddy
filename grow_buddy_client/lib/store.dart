@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'backup.dart';
 import 'models.dart';
 
 /// Local-only storage (browser localStorage on web, prefs on mobile).
@@ -62,8 +63,37 @@ class Store extends ChangeNotifier {
 
   Future<void> updatePlant() => _save(); // after mutating a MyPlant in place
 
-  Future<void> addSale(Sale s) async {
+  Future<void> markWatered(MyPlant p) async {
+    final now = DateTime.now().toIso8601String();
+    p.lastWatered = now.substring(0, 10);
+    p.logs.insert(0, LogEntry(now, 'Watered'));
+    await _save();
+  }
+
+  /// null goes back to the guide's interval.
+  Future<void> setWaterEvery(MyPlant p, int? days) async {
+    p.waterEveryDays = days;
+    await _save();
+  }
+
+  Backup exportBackup() => Backup(plants: plants, sales: sales, sunHours: sunHours);
+
+  /// Replaces all plants, sales and the sun-hours setting.
+  Future<void> restore(Backup b) async {
+    plants = b.plants;
+    sales = b.sales;
+    sunHours = b.sunHours;
+    await _save();
+  }
+
+  /// [markPlantSold] flips the linked plant (if any) to 'sold' in the same save.
+  Future<void> addSale(Sale s, {bool markPlantSold = false}) async {
     sales.add(s);
+    if (markPlantSold && s.plantId != null) {
+      for (final p in plants.where((p) => p.id == s.plantId)) {
+        p.status = 'sold';
+      }
+    }
     await _save();
   }
 

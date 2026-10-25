@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../care.dart';
 import '../data/plant_guides.dart';
 import '../models.dart';
 import '../store.dart';
@@ -31,12 +32,21 @@ class MyPlantsScreen extends StatelessWidget {
           itemBuilder: (context, i) {
             final p = plants[i];
             final g = guideById(p.guideId);
+            final today = todayYmd();
             final days = DateTime.now().difference(DateTime.parse(p.plantedOn)).inDays;
+            final water = p.watering(g, today);
+            final ready = p.readyIn(g, today);
             return ListTile(
               leading: Text(g?.emoji ?? '🌱', style: const TextStyle(fontSize: 28)),
               title: Text(p.nickname),
-              subtitle: Text('${g?.name ?? p.guideId} · day $days · ${p.status}'),
-              trailing: const Icon(Icons.chevron_right),
+              isThreeLine: ready != null,
+              subtitle: Text(
+                '${g?.name ?? p.guideId} · day $days · ${p.status}'
+                '${ready == null ? '' : '\n${readyLabel(ready)}'}',
+              ),
+              trailing: water == null
+                  ? const Icon(Icons.chevron_right)
+                  : _WaterChip(status: water, onTap: () => Store.instance.markWatered(p)),
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute<void>(builder: (_) => MyPlantDetail(plantId: p.id)),
@@ -45,6 +55,31 @@ class MyPlantsScreen extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+/// Tapping it marks the plant watered today.
+class _WaterChip extends StatelessWidget {
+  final WateringStatus status;
+  final VoidCallback onTap;
+  const _WaterChip({required this.status, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final (bg, fg) = switch (status.state) {
+      WaterState.overdue => (scheme.errorContainer, scheme.onErrorContainer),
+      WaterState.today => (scheme.tertiaryContainer, scheme.onTertiaryContainer),
+      WaterState.ok => (scheme.surfaceContainerHighest, scheme.onSurface),
+    };
+    return ActionChip(
+      avatar: Icon(Icons.water_drop, size: 16, color: fg),
+      label: Text(waterBadge(status), style: TextStyle(color: fg)),
+      backgroundColor: bg,
+      side: BorderSide.none,
+      tooltip: 'Mark watered today',
+      onPressed: onTap,
     );
   }
 }
@@ -67,6 +102,31 @@ class MyPlantDetail extends StatelessWidget {
     await Store.instance.updatePlant();
   }
 
+  Future<void> _editInterval(BuildContext context, MyPlant p, PlantGuide? g) async {
+    final text = await showTextPrompt(
+      context,
+      title: 'Water every how many days?',
+      confirmLabel: 'Save',
+      initialText: '${p.wateringInterval(g) ?? ''}',
+      labelText: 'Days between waterings',
+      hintText: g == null ? null : 'Empty = guide default (${g.waterEveryDays})',
+      keyboardType: TextInputType.number,
+      autofocus: true,
+    );
+    if (text == null) return;
+    if (text.isEmpty) return Store.instance.setWaterEvery(p, null);
+    final days = int.tryParse(text);
+    if (days == null || days < 1 || days > 90) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Enter whole days, from 1 to 90.')),
+        );
+      }
+      return;
+    }
+    await Store.instance.setWaterEvery(p, days);
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -78,6 +138,9 @@ class MyPlantDetail extends StatelessWidget {
         }
         final p = matches.first;
         final g = guideById(p.guideId);
+        final today = todayYmd();
+        final water = p.watering(g, today);
+        final ready = p.readyIn(g, today);
         return Scaffold(
           appBar: AppBar(
             title: Text(p.nickname),
@@ -129,11 +192,37 @@ class MyPlantDetail extends StatelessWidget {
                   await Store.instance.updatePlant();
                 },
               ),
+              const SizedBox(height: 16),
+              if (g != null) Text('Water: ${g.water}'),
+              if (water != null) ...[
+                const SizedBox(height: 8),
+                Text('Next watering: ${waterSentence(water)}'),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    FilledButton.tonalIcon(
+                      onPressed: () => Store.instance.markWatered(p),
+                      icon: const Icon(Icons.water_drop),
+                      label: const Text('Watered today'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => _editInterval(context, p, g),
+                      icon: const Icon(Icons.edit, size: 18),
+                      label: Text(
+                        'Every ${p.wateringInterval(g)} days${p.waterEveryDays == null ? '' : ' (yours)'}',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               if (g != null) ...[
                 const SizedBox(height: 16),
-                Text('Water: ${g.water}'),
-                const SizedBox(height: 4),
                 Text('Time to sellable: ${g.timeToSell}'),
+                if (ready != null) ...[
+                  const SizedBox(height: 4),
+                  Text(readyLabel(ready)),
+                ],
               ],
               const SizedBox(height: 16),
               Text('Log', style: Theme.of(context).textTheme.titleMedium),

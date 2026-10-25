@@ -1,11 +1,11 @@
 'use strict';
 // Generates the Flutter data files from data/*.json so there is one source of truth.
-//   node scripts/generate.js [path/to/grow_buddy]
+//   node scripts/generate.js [path/to/grow_buddy_client]
 const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const app = path.resolve(process.argv[2] || path.join(root, '..', 'grow_buddy'));
+const app = path.resolve(process.argv[2] || path.join(root, '..', 'grow_buddy_client'));
 const plants = require('../data/plants.json');
 const data = require('../data/symptoms.json');
 
@@ -26,6 +26,9 @@ function plantsDart() {
     minAfternoonHrs: ${p.minAfternoonHrs},
     maxAfternoonHrs: ${p.maxAfternoonHrs},
     heatSensitive: ${p.heatSensitive},
+    waterEveryDays: ${p.waterEveryDays},
+    daysToSellMin: ${p.daysToSellMin},
+    daysToSellMax: ${p.daysToSellMax},
     water: ${q(p.water)},
     soil: ${q(p.soil)},
     timeToSell: ${q(p.timeToSell)},

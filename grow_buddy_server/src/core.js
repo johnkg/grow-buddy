@@ -1,5 +1,7 @@
 'use strict';
 // Core app logic. Mirrors the Dart code in lib/models.dart and lib/data/symptoms.dart.
+// Dates are 'YYYY-MM-DD' strings (callers pass the first 10 chars of an ISO timestamp), so JS and
+// Dart do the same whole-day arithmetic with no timezone involved.
 
 /** @returns {{verdict:'good'|'maybe'|'poor', headline:string, tips:string[]}} */
 function checkFit(p, hrs) {
@@ -72,4 +74,75 @@ function margin(summary) {
   return summary.revenue > 0 ? summary.profit / summary.revenue : null;
 }
 
-module.exports = { checkFit, rankCauses, salesSummary, margin };
+function parseYmd(ymd) {
+  const [y, m, d] = ymd.slice(0, 10).split('-').map(Number);
+  return [y, m - 1, d];
+}
+
+const DAY_MS = 86400000;
+
+/** Whole days since 1970-01-01 for a 'YYYY-MM-DD' string. */
+function dayNumber(ymd) {
+  return Math.round(Date.UTC(...parseYmd(ymd)) / DAY_MS);
+}
+
+/** 'YYYY-MM-DD' plus n days (n may be negative). */
+function addDays(ymd, n) {
+  const [y, m, d] = parseYmd(ymd);
+  return new Date(Date.UTC(y, m, d + n)).toISOString().slice(0, 10);
+}
+
+/**
+ * When a plant is next due for water. state: 'overdue' (past due), 'today', or 'ok'.
+ * daysUntil is negative when overdue.
+ */
+function wateringStatus(lastWatered, everyDays, today) {
+  const dueOn = addDays(lastWatered, everyDays);
+  const daysUntil = dayNumber(dueOn) - dayNumber(today);
+  const state = daysUntil < 0 ? 'overdue' : daysUntil === 0 ? 'today' : 'ok';
+  return { dueOn, daysUntil, state };
+}
+
+/**
+ * Usual sell window for a plant started on plantedOn.
+ * phase: 'notYet' (before the window), 'window' (inside it, inclusive), 'late' (past it).
+ */
+function readyEstimate(plantedOn, minDays, maxDays, today) {
+  const earliest = addDays(plantedOn, minDays);
+  const latest = addDays(plantedOn, maxDays);
+  const daysToEarliest = dayNumber(earliest) - dayNumber(today);
+  const daysToLatest = dayNumber(latest) - dayNumber(today);
+  const phase = daysToEarliest > 0 ? 'notYet' : daysToLatest >= 0 ? 'window' : 'late';
+  return { earliest, latest, daysToEarliest, phase };
+}
+
+function addTo(map, key, s) {
+  const row = map.get(key) || { key, qty: 0, revenue: 0, cost: 0, profit: 0 };
+  row.qty += s.qty;
+  row.revenue += s.qty * s.unitPrice;
+  row.cost += s.cost;
+  row.profit = row.revenue - row.cost;
+  map.set(key, row);
+}
+
+/** Totals per calendar month ('YYYY-MM' from sale.date), oldest first. */
+function salesByMonth(sales) {
+  const map = new Map();
+  for (const s of sales) addTo(map, s.date.slice(0, 7), s);
+  return [...map.values()].sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+}
+
+/** Totals per plant variety (sale.guideId, or 'other' when not linked), most profit first. */
+function salesByVariety(sales) {
+  const map = new Map();
+  for (const s of sales) addTo(map, s.guideId || 'other', s);
+  return [...map.values()].sort((a, b) => {
+    const d = b.profit - a.profit;
+    return Math.abs(d) > 1e-9 ? d : a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
+  });
+}
+
+module.exports = {
+  checkFit, rankCauses, salesSummary, margin,
+  dayNumber, addDays, wateringStatus, readyEstimate, salesByMonth, salesByVariety,
+};

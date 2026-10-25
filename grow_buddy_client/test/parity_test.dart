@@ -41,4 +41,78 @@ void main() {
       }
     }
   });
+
+  test('guide care numbers are sane for every plant', () {
+    for (final g in plantGuides) {
+      expect(g.waterEveryDays, inInclusiveRange(1, 30), reason: g.id);
+      expect(g.daysToSellMin, lessThanOrEqualTo(g.daysToSellMax), reason: g.id);
+    }
+  });
+
+  test('dayNumber and addDays match JS', () {
+    for (final raw in fx['dates'] as List) {
+      final e = raw as Map<String, dynamic>;
+      final why = '${e['ymd']} + ${e['n']}';
+      expect(dayNumber(e['ymd'] as String), e['day'], reason: why);
+      expect(addDays(e['ymd'] as String, e['n'] as int), e['plus'], reason: why);
+    }
+  });
+
+  test('wateringStatus matches JS', () {
+    for (final raw in fx['water'] as List) {
+      final e = raw as Map<String, dynamic>;
+      final w = wateringStatus(e['last'] as String, e['every'] as int, e['today'] as String);
+      final why = '${e['last']} every ${e['every']}';
+      expect(w.dueOn, e['dueOn'], reason: why);
+      expect(w.daysUntil, e['daysUntil'], reason: why);
+      expect(w.state.name, e['state'], reason: why);
+    }
+  });
+
+  test('readyEstimate matches JS', () {
+    for (final raw in fx['ready'] as List) {
+      final e = raw as Map<String, dynamic>;
+      final r = readyEstimate(
+          e['planted'] as String, e['lo'] as int, e['hi'] as int, e['today'] as String);
+      final why = '${e['planted']} ${e['lo']}-${e['hi']}';
+      expect(r.earliest, e['earliest'], reason: why);
+      expect(r.latest, e['latest'], reason: why);
+      expect(r.daysToEarliest, e['daysToEarliest'], reason: why);
+      expect(r.phase.name, e['phase'], reason: why);
+    }
+  });
+
+  test('sales summary, by month and by variety match JS', () {
+    void sameRows(List<SalesRow> got, List want, String why) {
+      expect(got.map((r) => r.key).toList(), want.map((r) => r['key']).toList(), reason: why);
+      for (var i = 0; i < got.length; i++) {
+        final w = want[i] as Map<String, dynamic>;
+        expect(got[i].qty, w['qty'], reason: why);
+        expect(got[i].revenue, closeTo((w['revenue'] as num).toDouble(), 1e-9), reason: why);
+        expect(got[i].cost, closeTo((w['cost'] as num).toDouble(), 1e-9), reason: why);
+        expect(got[i].profit, closeTo((w['profit'] as num).toDouble(), 1e-9), reason: why);
+      }
+    }
+
+    for (final raw in fx['salesCases'] as List) {
+      final e = raw as Map<String, dynamic>;
+      final sales = (e['sales'] as List)
+          .map((x) => Sale.fromJson(x as Map<String, dynamic>))
+          .toList();
+      final why = '${sales.length} sales';
+      final sum = salesSummary(sales);
+      final want = e['summary'] as Map<String, dynamic>;
+      expect(sum.revenue, closeTo((want['revenue'] as num).toDouble(), 1e-9), reason: why);
+      expect(sum.cost, closeTo((want['cost'] as num).toDouble(), 1e-9), reason: why);
+      expect(sum.profit, closeTo((want['profit'] as num).toDouble(), 1e-9), reason: why);
+      final m = margin(sum);
+      if (e['margin'] == null) {
+        expect(m, isNull, reason: why);
+      } else {
+        expect(m, closeTo((e['margin'] as num).toDouble(), 1e-9), reason: why);
+      }
+      sameRows(salesByMonth(sales), e['byMonth'] as List, 'month, $why');
+      sameRows(salesByVariety(sales), e['byVariety'] as List, 'variety, $why');
+    }
+  });
 }

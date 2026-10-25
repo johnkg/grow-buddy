@@ -14,7 +14,7 @@ Owner: Joseph. Experienced .NET dev, beginner plant grower. Spot gets afternoon 
 
 ## State
 - `npm test` in grow_buddy_server: 31 pass. `node test/web.smoke.js` needs jsdom (NODE_PATH).
-- Flutter 3.47.4 at ~/flutter. `flutter analyze` clean; `flutter test` 7 pass (parity + app_flow widget tests).
+- Flutter 3.47.4 at ~/flutter. Cloud sessions install it via `.claude/hooks/session-start.sh` (keep version in sync with CI). `flutter analyze` clean; `flutter test` 7 pass (parity + app_flow widget tests).
   `flutter build web` works; app loads and renders in a browser.
 - Dialogs with text fields must own their controllers (StatefulWidget, e.g. `showTextPrompt`); disposing
   right after `showDialog` returns crashes during the exit animation.

@@ -4,6 +4,7 @@ import '../data/plant_guides.dart';
 import '../format.dart';
 import '../models.dart';
 import '../store.dart';
+import '../theme.dart';
 
 class SalesScreen extends StatefulWidget {
   const SalesScreen({super.key});
@@ -16,7 +17,8 @@ class _SalesScreenState extends State<SalesScreen> {
   bool _insights = false;
 
   Future<void> _addSale(BuildContext context) async {
-    final r = await showDialog<(Sale, bool)>(context: context, builder: (_) => const _SaleDialog());
+    final r = await showDialog<(Sale, bool)>(
+        context: context, builder: (_) => const _SaleDialog());
     if (r != null) await Store.instance.addSale(r.$1, markPlantSold: r.$2);
   }
 
@@ -37,41 +39,36 @@ class _SalesScreenState extends State<SalesScreen> {
           ),
           body: Column(
             children: [
-              Card(
-                margin: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _stat(context, 'Revenue', money(summary.revenue)),
-                          _stat(context, 'Costs', money(summary.cost)),
-                          _stat(context, 'Profit', money(summary.profit)),
-                        ],
-                      ),
-                      if (m != null) ...[
-                        const SizedBox(height: 4),
-                        Text('Margin ${(m * 100).round()}%', style: Theme.of(context).textTheme.labelMedium),
-                      ],
-                    ],
-                  ),
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: BorderRadius.circular(20),
                 ),
+                child: _SummaryHero(summary: summary, margin: m),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: SegmentedButton<bool>(
                   segments: const [
-                    ButtonSegment(value: false, label: Text('Sales'), icon: Icon(Icons.receipt_long)),
-                    ButtonSegment(value: true, label: Text('Insights'), icon: Icon(Icons.bar_chart)),
+                    ButtonSegment(
+                        value: false,
+                        label: Text('Sales'),
+                        icon: Icon(Icons.receipt_long)),
+                    ButtonSegment(
+                        value: true,
+                        label: Text('Insights'),
+                        icon: Icon(Icons.bar_chart)),
                   ],
                   selected: {_insights},
-                  onSelectionChanged: (s) => setState(() => _insights = s.first),
+                  onSelectionChanged: (s) =>
+                      setState(() => _insights = s.first),
                 ),
               ),
               const SizedBox(height: 8),
-              Expanded(child: _insights ? _Insights(sales: all) : _history(sales)),
+              Expanded(
+                  child: _insights ? _Insights(sales: all) : _history(sales)),
             ],
           ),
         );
@@ -82,44 +79,96 @@ class _SalesScreenState extends State<SalesScreen> {
   Widget _history(List<Sale> sales) {
     if (sales.isEmpty) return const Center(child: Text('No sales yet.'));
     return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 96),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
       itemCount: sales.length,
       itemBuilder: (context, i) {
         final s = sales[i];
-        final plant = Store.instance.plants.where((p) => p.id == s.plantId).firstOrNull;
+        final plant =
+            Store.instance.plants.where((p) => p.id == s.plantId).firstOrNull;
         final extras = [
           s.date.substring(0, 10),
           if (plant != null) plant.nickname,
           if (s.note.isNotEmpty) s.note,
         ];
-        return Dismissible(
-          key: ValueKey(s.id),
-          direction: DismissDirection.endToStart,
-          background: Container(
-            color: Colors.red,
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 16),
-            child: const Icon(Icons.delete, color: Colors.white),
-          ),
-          onDismissed: (_) => Store.instance.removeSale(s.id),
-          child: ListTile(
-            title: Text('${s.qty} × ${s.item}'),
-            subtitle: Text(extras.join(' · ')),
-            trailing: Text(
-              '${money(s.revenue)}\nprofit ${money(s.profit)}',
-              textAlign: TextAlign.right,
+        final scheme = Theme.of(context).colorScheme;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Dismissible(
+              key: ValueKey(s.id),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                color: scheme.error,
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 16),
+                child: Icon(Icons.delete, color: scheme.onError),
+              ),
+              onDismissed: (_) => Store.instance.removeSale(s.id),
+              child: ColoredBox(
+                  color: scheme.surfaceContainerLowest,
+                  child: ListTile(
+                    title: Text('${s.qty} × ${s.item}'),
+                    subtitle: Text(extras.join(' · ')),
+                    trailing: Text(
+                      '${money(s.revenue)}\nprofit ${money(s.profit)}',
+                      textAlign: TextAlign.right,
+                    ),
+                  )),
             ),
           ),
         );
       },
     );
   }
+}
 
-  Widget _stat(BuildContext context, String label, String value) {
+class _SummaryHero extends StatelessWidget {
+  final SalesSummary summary;
+  final double? margin;
+  const _SummaryHero({required this.summary, required this.margin});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context).textTheme;
+    final soft = scheme.onPrimary.withValues(alpha: 0.8);
+    Widget small(String label, String value) => Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: TextStyle(fontSize: 13, color: soft)),
+              Text(value,
+                  style: theme.titleSmall?.copyWith(
+                      color: scheme.onPrimary,
+                      fontFeatures: const [FontFeature.tabularFigures()])),
+            ],
+          ),
+        );
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: Theme.of(context).textTheme.labelMedium),
-        Text(value, style: Theme.of(context).textTheme.titleMedium),
+        Text('Profit', style: TextStyle(fontSize: 14, color: soft)),
+        Text(
+          money(summary.profit),
+          style: theme.headlineMedium?.copyWith(
+            color: scheme.onPrimary,
+            fontSize: 40,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            small('Revenue', money(summary.revenue)),
+            small('Costs', money(summary.cost)),
+          ],
+        ),
+        if (margin != null) ...[
+          const SizedBox(height: 8),
+          Text('Margin ${(margin! * 100).round()}%',
+              style: TextStyle(fontSize: 13, color: soft)),
+        ],
       ],
     );
   }
@@ -142,7 +191,8 @@ class _Insights extends StatelessWidget {
     }
     final theme = Theme.of(context);
     final months = salesByMonth(sales);
-    final recent = months.length > 6 ? months.sublist(months.length - 6) : months;
+    final recent =
+        months.length > 6 ? months.sublist(months.length - 6) : months;
     final maxRevenue = recent.fold<double>(0, (a, r) => math.max(a, r.revenue));
     final varieties = salesByVariety(sales);
     return ListView(
@@ -166,8 +216,12 @@ class _Insights extends StatelessWidget {
                 const SizedBox(height: 4),
                 LinearProgressIndicator(
                   value: maxRevenue > 0 ? r.revenue / maxRevenue : 0,
-                  minHeight: 8,
-                  borderRadius: BorderRadius.circular(4),
+                  minHeight: 10,
+                  borderRadius: BorderRadius.circular(5),
+                  color: r.revenue == maxRevenue
+                      ? sunAmber
+                      : theme.colorScheme.primary,
+                  backgroundColor: theme.colorScheme.surfaceContainerHigh,
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -186,11 +240,14 @@ class _Insights extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             dense: true,
             leading: Text(
-              varieties[i].key == 'other' ? '🪴' : (guideById(varieties[i].key)?.emoji ?? '🪴'),
+              varieties[i].key == 'other'
+                  ? '🪴'
+                  : (guideById(varieties[i].key)?.emoji ?? '🪴'),
               style: const TextStyle(fontSize: 24),
             ),
             title: Text(_varietyName(varieties[i].key)),
-            subtitle: Text('${varieties[i].qty} sold · revenue ${money(varieties[i].revenue)}'),
+            subtitle: Text(
+                '${varieties[i].qty} sold · revenue ${money(varieties[i].revenue)}'),
             trailing: Text(
               '${i == 0 && varieties.length > 1 ? '★ ' : ''}${money(varieties[i].profit)}',
               style: theme.textTheme.titleSmall?.copyWith(
@@ -243,7 +300,9 @@ class _SaleDialogState extends State<_SaleDialog> {
   }
 
   String? _numCheck(String? v) =>
-      (v == null || double.tryParse(v.trim()) == null) ? 'Enter a number' : null;
+      (v == null || double.tryParse(v.trim()) == null)
+          ? 'Enter a number'
+          : null;
 
   void _pickPlant(MyPlant? p) {
     setState(() {
@@ -286,9 +345,11 @@ class _SaleDialogState extends State<_SaleDialog> {
                 DropdownButtonFormField<MyPlant?>(
                   initialValue: _plant,
                   isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'From my plants (optional)'),
+                  decoration: const InputDecoration(
+                      labelText: 'From my plants (optional)'),
                   items: [
-                    const DropdownMenuItem<MyPlant?>(value: null, child: Text('Not linked')),
+                    const DropdownMenuItem<MyPlant?>(
+                        value: null, child: Text('Not linked')),
                     for (final p in _plants)
                       DropdownMenuItem<MyPlant?>(
                         value: p,
@@ -311,25 +372,32 @@ class _SaleDialogState extends State<_SaleDialog> {
                 ),
               TextFormField(
                 controller: _item,
-                decoration: const InputDecoration(labelText: 'Item (e.g. Pothos 4" pot)'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                decoration: const InputDecoration(
+                    labelText: 'Item (e.g. Pothos 4" pot)'),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
               TextFormField(
                 controller: _qty,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'Quantity'),
-                validator: (v) => (int.tryParse((v ?? '').trim()) == null) ? 'Whole number' : null,
+                validator: (v) => (int.tryParse((v ?? '').trim()) == null)
+                    ? 'Whole number'
+                    : null,
               ),
               TextFormField(
                 controller: _price,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(labelText: 'Price each (₱)'),
                 validator: _numCheck,
               ),
               TextFormField(
                 controller: _cost,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Total cost (pot, soil, seeds...) (₱)'),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                    labelText: 'Total cost (pot, soil, seeds...) (₱)'),
                 validator: _numCheck,
               ),
               TextFormField(
@@ -341,7 +409,9 @@ class _SaleDialogState extends State<_SaleDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel')),
         FilledButton(onPressed: _save, child: const Text('Save')),
       ],
     );

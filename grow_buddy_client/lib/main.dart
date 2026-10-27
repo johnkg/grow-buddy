@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'backup.dart';
 import 'screens/guide_screen.dart';
 import 'screens/my_plants_screen.dart';
-import 'screens/debug_screen.dart';
+import 'screens/diagnose_screen.dart';
 import 'screens/sales_screen.dart';
 import 'store.dart';
 import 'theme.dart';
@@ -38,11 +38,11 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
 
-  static const _titles = ['Plant guide', 'My plants', 'Debug a plant', 'Sales'];
+  static const _titles = ['Plant guide', 'My plants', 'Diagnose a plant', 'Sales'];
   static const _screens = <Widget>[
     GuideScreen(),
     MyPlantsScreen(),
-    DebugScreen(),
+    DiagnoseScreen(),
     SalesScreen(),
   ];
 
@@ -69,7 +69,7 @@ class _HomeShellState extends State<HomeShell> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.menu_book_outlined), label: 'Guide'),
           NavigationDestination(icon: Icon(Icons.local_florist_outlined), label: 'My plants'),
-          NavigationDestination(icon: Icon(Icons.search), label: 'Debug'),
+          NavigationDestination(icon: Icon(Icons.search), label: 'Diagnose'),
           NavigationDestination(icon: Icon(Icons.payments_outlined), label: 'Sales'),
         ],
       ),

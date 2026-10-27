@@ -110,9 +110,9 @@ void main() {
     expect(find.text('₱240.00'), findsOneWidget);
   });
 
-  testWidgets('debug quick check lists causes', (tester) async {
+  testWidgets('diagnose quick check lists causes', (tester) async {
     await _boot(tester);
-    await tester.tap(find.text('Debug'));
+    await tester.tap(find.text('Diagnose'));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FilterChip).first);
     await tester.pumpAndSettle();

@@ -276,7 +276,7 @@ function salesByVariety(sales) {
 
 
 
-const TABS = [['guide', 'Guide'], ['mine', 'My plants'], ['debug', 'Debug'], ['sales', 'Sales']];
+const TABS = [['guide', 'Guide'], ['mine', 'My plants'], ['debug', 'Diagnose'], ['sales', 'Sales']];
 const KEY = 'growbuddy.web.v1';
 const CATS = ['all', ...Array.from(new Set(PLANTS.map((p) => p.category)))];
 const peso = (n) => (n < 0 ? '-' : '') + '₱' + Math.abs(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

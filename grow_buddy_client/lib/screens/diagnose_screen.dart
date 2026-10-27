@@ -6,14 +6,14 @@ import '../data/symptoms.dart';
 import '../services/ai_diagnosis.dart';
 import '../store.dart';
 
-class DebugScreen extends StatefulWidget {
-  const DebugScreen({super.key});
+class DiagnoseScreen extends StatefulWidget {
+  const DiagnoseScreen({super.key});
 
   @override
-  State<DebugScreen> createState() => _DebugScreenState();
+  State<DiagnoseScreen> createState() => _DiagnoseScreenState();
 }
 
-class _DebugScreenState extends State<DebugScreen> {
+class _DiagnoseScreenState extends State<DiagnoseScreen> {
   String? _plantChoice; // 'my:<id>' or 'guide:<id>' or null
   final Set<String> _selected = {};
   final _notes = TextEditingController();
@@ -224,6 +224,7 @@ class _DebugScreenState extends State<DebugScreen> {
               margin: const EdgeInsets.only(top: 8),
               clipBehavior: Clip.antiAlias,
               child: ExpansionTile(
+                initiallyExpanded: r == _ranked!.first,
                 shape: const Border(),
                 collapsedShape: const Border(),
                 title: Text(r.cause.title),

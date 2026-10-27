@@ -1,7 +1,7 @@
 # Grow Buddy
 
 Owner: Joseph. Experienced .NET dev, beginner plant grower. Spot gets afternoon sun only. Wants an app to
-(1) teach how to grow a plant variety and say if it fits afternoon-only sun, (2) "debug" sick plants,
+(1) teach how to grow a plant variety and say if it fits afternoon-only sun, (2) "diagnose" sick plants and say how to fix them,
 (3) track his plants, (4) track sales. Flutter, must also run as web for testing. Based in the Philippines (₱).
 
 ## Layout

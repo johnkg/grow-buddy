@@ -4,7 +4,7 @@ Beginner plant-growing helper. Flutter (mobile + web).
 
 - **Guide**: starter plants, set your afternoon-sun hours, get Good / Maybe / Poor fit and tips.
 - **My plants**: track what you grow, status (growing / ready / sold), log entries.
-- **Debug**: pick symptoms for a quick rule-based check, or add a photo and ask Claude.
+- **Diagnose**: pick symptoms for a quick rule-based check, or add a photo and ask Claude. Shows likely causes and what to do about each.
 - **Sales**: record sales and costs, see revenue / cost / profit.
 
 ## Run it
@@ -23,7 +23,7 @@ flutter run -d chrome
 Or: run `flutter create .` inside this folder, then restore `lib/` and `pubspec.yaml` if it overwrote them.
 
 Requires a recent Flutter (3.27+ for `withValues`; 3.33+ for `DropdownButtonFormField.initialValue`).
-If your Flutter is older, use `value:` in `debug_screen.dart` and `withOpacity` in `guide_screen.dart`.
+If your Flutter is older, use `value:` in `diagnose_screen.dart` and `withOpacity` in `guide_screen.dart`.
 
 ## AI diagnosis
 

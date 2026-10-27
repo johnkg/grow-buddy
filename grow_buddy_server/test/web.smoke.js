@@ -57,7 +57,7 @@ sel.value = 'ready';
 sel.dispatchEvent(new window.Event('change', { bubbles: true }));
 assert.ok(JSON.parse(window.localStorage.getItem('growbuddy.web.v1')).plants.some((p) => p.status === 'ready'));
 
-// Debug
+// Diagnose
 tab('debug');
 assert.equal($$('[data-act=sym]').length, 16);
 assert.equal($('[data-act=check]').disabled, true);

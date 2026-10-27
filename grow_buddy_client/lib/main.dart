@@ -5,6 +5,7 @@ import 'screens/my_plants_screen.dart';
 import 'screens/debug_screen.dart';
 import 'screens/sales_screen.dart';
 import 'store.dart';
+import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,10 +21,8 @@ class GrowBuddyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Grow Buddy',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorSchemeSeed: Colors.green,
-        useMaterial3: true,
-      ),
+      theme: growBuddyTheme(Brightness.light),
+      darkTheme: growBuddyTheme(Brightness.dark),
       home: const HomeShell(),
     );
   }
@@ -68,10 +67,10 @@ class _HomeShellState extends State<HomeShell> {
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.menu_book), label: 'Guide'),
-          NavigationDestination(icon: Icon(Icons.local_florist), label: 'My plants'),
-          NavigationDestination(icon: Icon(Icons.healing), label: 'Debug'),
-          NavigationDestination(icon: Icon(Icons.payments), label: 'Sales'),
+          NavigationDestination(icon: Icon(Icons.menu_book_outlined), label: 'Guide'),
+          NavigationDestination(icon: Icon(Icons.local_florist_outlined), label: 'My plants'),
+          NavigationDestination(icon: Icon(Icons.search), label: 'Debug'),
+          NavigationDestination(icon: Icon(Icons.payments_outlined), label: 'Sales'),
         ],
       ),
     );

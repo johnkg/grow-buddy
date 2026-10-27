@@ -2,16 +2,20 @@ import 'package:flutter/material.dart';
 import '../data/plant_guides.dart';
 import '../models.dart';
 import '../store.dart';
+import '../theme.dart';
+import '../widgets/sun_band.dart';
 import '../widgets/text_prompt_dialog.dart';
 
-Color verdictColor(Verdict v) {
+/// Verdict colours as (background, foreground). Every verdict also has a text label.
+(Color, Color) verdictColors(BuildContext context, Verdict v) {
+  final s = Theme.of(context).colorScheme;
   switch (v) {
     case Verdict.good:
-      return Colors.green;
+      return (s.primaryContainer, s.onPrimaryContainer);
     case Verdict.maybe:
-      return Colors.orange;
+      return (sunAmber, onSunAmber);
     case Verdict.poor:
-      return Colors.red;
+      return (s.errorContainer, s.onErrorContainer);
   }
 }
 
@@ -37,51 +41,65 @@ class GuideScreen extends StatelessWidget {
         final hrs = Store.instance.sunHours;
         return Column(
           children: [
-            Card(
-              margin: const EdgeInsets.all(12),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Direct afternoon sun at my spot: ${hrs.toStringAsFixed(1)} hrs/day',
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                    Slider(
-                      value: hrs,
-                      min: 0,
-                      max: 8,
-                      divisions: 16,
-                      label: '${hrs.toStringAsFixed(1)} hrs',
-                      onChanged: (v) => Store.instance.setSunHours(v),
-                    ),
-                    const Text(
-                      'Count hours when sun actually hits the plant directly, not just bright shade.',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Direct afternoon sun at my spot: ${hrs.toStringAsFixed(1)} hrs/day',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 12),
+                      SunBand(sunHours: hrs),
+                      Slider(
+                        value: hrs,
+                        min: 0,
+                        max: 8,
+                        divisions: 16,
+                        label: '${hrs.toStringAsFixed(1)} hrs',
+                        onChanged: (v) => Store.instance.setSunHours(v),
+                      ),
+                      Text(
+                        'Count hours when sun actually hits the plant directly, not just bright shade.',
+                        style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
             Expanded(
               child: ListView.builder(
                 itemCount: plantGuides.length,
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                 itemBuilder: (context, i) {
                   final g = plantGuides[i];
                   final fit = checkFit(g, hrs);
-                  return ListTile(
-                    leading: Text(g.emoji, style: const TextStyle(fontSize: 28)),
-                    title: Text(g.name),
-                    subtitle: Text('${g.difficulty} · ${g.timeToSell}'),
-                    trailing: Chip(
-                      label: Text(verdictLabel(fit.verdict)),
-                      backgroundColor: verdictColor(fit.verdict).withValues(alpha: 0.2),
-                      side: BorderSide(color: verdictColor(fit.verdict)),
-                    ),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute<void>(builder: (_) => PlantDetailScreen(guide: g)),
+                  final (bg, fg) = verdictColors(context, fit.verdict);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Card(
+                      clipBehavior: Clip.antiAlias,
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        leading: _EmojiTile(g.emoji),
+                        title: Text(g.name, style: Theme.of(context).textTheme.titleSmall),
+                        subtitle: Text('${g.difficulty} · ${g.timeToSell}'),
+                        trailing: Chip(
+                          label: Text(verdictLabel(fit.verdict)),
+                          backgroundColor: bg,
+                          labelStyle: TextStyle(color: fg, fontWeight: FontWeight.w700),
+                          side: BorderSide.none,
+                        ),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(builder: (_) => PlantDetailScreen(guide: g)),
+                        ),
+                      ),
                     ),
                   );
                 },
@@ -90,6 +108,25 @@ class GuideScreen extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _EmojiTile extends StatelessWidget {
+  final String emoji;
+  const _EmojiTile(this.emoji);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 52,
+      height: 52,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Text(emoji, style: const TextStyle(fontSize: 26)),
     );
   }
 }
@@ -123,7 +160,8 @@ class PlantDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fit = checkFit(guide, Store.instance.sunHours);
-    final color = verdictColor(fit.verdict);
+    final (bg, fg) = verdictColors(context, fit.verdict);
+    final hrs = Store.instance.sunHours;
     return Scaffold(
       appBar: AppBar(title: Text(guide.name)),
       floatingActionButton: FloatingActionButton.extended(
@@ -135,17 +173,27 @@ class PlantDetailScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
         children: [
           Card(
-            color: color.withValues(alpha: 0.12),
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '${verdictLabel(fit.verdict)} for afternoon-only sun: ${fit.headline}',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(color: color),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
+                    child: Text(
+                      verdictLabel(fit.verdict),
+                      style: TextStyle(color: fg, fontWeight: FontWeight.w700),
+                    ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
+                  Text(
+                    'For afternoon-only sun: ${fit.headline}',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  SunBand(sunHours: hrs, needMin: guide.minAfternoonHrs, needMax: guide.maxAfternoonHrs),
+                  const SizedBox(height: 12),
                   for (final t in fit.tips) Padding(
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Text('• $t'),

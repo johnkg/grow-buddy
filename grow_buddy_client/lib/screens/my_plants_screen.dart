@@ -27,34 +27,99 @@ class MyPlantsScreen extends StatelessWidget {
             ),
           );
         }
+        final today = todayYmd();
+        final thirsty = plants.where((p) {
+          final st = p.watering(guideById(p.guideId), today)?.state;
+          return st == WaterState.overdue || st == WaterState.today;
+        }).length;
         return ListView.builder(
-          itemCount: plants.length,
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+          itemCount: plants.length + 1,
           itemBuilder: (context, i) {
-            final p = plants[i];
+            if (i == 0) return _WaterBanner(count: thirsty);
+            final p = plants[i - 1];
             final g = guideById(p.guideId);
-            final today = todayYmd();
             final days = DateTime.now().difference(DateTime.parse(p.plantedOn)).inDays;
             final water = p.watering(g, today);
             final ready = p.readyIn(g, today);
-            return ListTile(
-              leading: Text(g?.emoji ?? '🌱', style: const TextStyle(fontSize: 28)),
-              title: Text(p.nickname),
-              isThreeLine: ready != null,
-              subtitle: Text(
-                '${g?.name ?? p.guideId} · day $days · ${p.status}'
-                '${ready == null ? '' : '\n${readyLabel(ready)}'}',
-              ),
-              trailing: water == null
-                  ? const Icon(Icons.chevron_right)
-                  : _WaterChip(status: water, onTap: () => Store.instance.markWatered(p)),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute<void>(builder: (_) => MyPlantDetail(plantId: p.id)),
+            final scheme = Theme.of(context).colorScheme;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Card(
+                clipBehavior: Clip.antiAlias,
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  leading: Container(
+                    width: 52,
+                    height: 52,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: scheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Text(g?.emoji ?? '🌱', style: const TextStyle(fontSize: 26)),
+                  ),
+                  title: Text(p.nickname, style: Theme.of(context).textTheme.titleSmall),
+                  isThreeLine: ready != null,
+                  subtitle: Text(
+                    '${g?.name ?? p.guideId} · day $days · ${p.status}'
+                    '${ready == null ? '' : '\n${readyLabel(ready)}'}',
+                  ),
+                  trailing: water == null
+                      ? const Icon(Icons.chevron_right)
+                      : _WaterChip(status: water, onTap: () => Store.instance.markWatered(p)),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(builder: (_) => MyPlantDetail(plantId: p.id)),
+                  ),
+                ),
               ),
             );
           },
         );
       },
+    );
+  }
+}
+
+/// Summary of what needs water now. Hidden when nothing does.
+class _WaterBanner extends StatelessWidget {
+  final int count;
+  const _WaterBanner({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    if (count == 0) return const SizedBox(height: 4);
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: scheme.primary,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: scheme.onPrimary.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(Icons.water_drop_outlined, color: scheme.onPrimary),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                count == 1 ? '1 plant needs water' : '$count plants need water',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: scheme.onPrimary),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

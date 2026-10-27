@@ -7,8 +7,8 @@ export ANTHROPIC_API_KEY=sk-ant-...        # required for /api/diagnose
 export APP_TOKEN=some-long-random-string   # optional shared secret (x-app-token header)
 export ALLOWED_ORIGIN=https://your.site    # optional CORS origin, default *
 npm start                                  # listens on :8787 (PORT to change)
-npm test                                   # 31 tests, no network needed
-npm run gen                                # regenerate ../grow_buddy/lib/data/*.dart from data/*.json
+npm test                                   # 38 tests, no network needed
+npm run gen                                # regenerate ../grow_buddy_client/lib/data/*.dart from data/*.json
 node scripts/build_web.js                  # rebuild web/dist/grow-buddy.html
 ```
 

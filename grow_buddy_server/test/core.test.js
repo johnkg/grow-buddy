@@ -3,7 +3,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const plants = require('../data/plants.json');
 const symptoms = require('../data/symptoms.json');
-const { checkFit, rankCauses, salesSummary, margin } = require('../src/core');
+const {
+  checkFit, rankCauses, salesSummary, margin,
+  dayNumber, addDays, wateringStatus, readyEstimate, salesByMonth, salesByVariety,
+} = require('../src/core');
 
 const byId = (id) => plants.find((p) => p.id === id);
 
@@ -25,6 +28,11 @@ test('plants data: schema and unique ids', () => {
     assert.ok(p.minAfternoonHrs >= 0 && p.maxAfternoonHrs <= 9, `${p.id} hrs range`);
     assert.ok(p.minAfternoonHrs <= p.maxAfternoonHrs, `${p.id} min<=max`);
     assert.equal(typeof p.heatSensitive, 'boolean', `${p.id}.heatSensitive`);
+    for (const k of ['waterEveryDays', 'daysToSellMin', 'daysToSellMax']) {
+      assert.ok(Number.isInteger(p[k]) && p[k] > 0, `${p.id}.${k}`);
+    }
+    assert.ok(p.waterEveryDays <= 30, `${p.id} waterEveryDays`);
+    assert.ok(p.daysToSellMin <= p.daysToSellMax, `${p.id} daysToSell min<=max`);
     assert.ok(Array.isArray(p.steps) && p.steps.length >= 3, `${p.id} steps`);
     assert.ok(Array.isArray(p.afternoonTips) && p.afternoonTips.length >= 1, `${p.id} tips`);
   }
@@ -139,4 +147,73 @@ test('salesSummary and margin', () => {
 test('salesSummary: loss is negative profit', () => {
   const s = salesSummary([{ qty: 1, unitPrice: 50, cost: 200 }]);
   assert.equal(s.profit, -150);
+});
+
+test('addDays: month ends, leap day, year change, negative', () => {
+  assert.equal(addDays('2026-01-31', 1), '2026-02-01');
+  assert.equal(addDays('2024-02-28', 1), '2024-02-29');
+  assert.equal(addDays('2025-02-28', 1), '2025-03-01');
+  assert.equal(addDays('2026-12-30', 3), '2027-01-02');
+  assert.equal(addDays('2026-03-01', -1), '2026-02-28');
+  assert.equal(addDays('2026-10-25T10:11:12.123456', 0), '2026-10-25'); // ISO timestamps are fine
+});
+
+test('dayNumber: whole-day differences', () => {
+  assert.equal(dayNumber('1970-01-01'), 0);
+  assert.equal(dayNumber('2026-10-26') - dayNumber('2026-10-25'), 1);
+  assert.equal(dayNumber('2025-03-01') - dayNumber('2025-02-28'), 1);
+});
+
+test('wateringStatus: ok, due today, overdue', () => {
+  const today = '2026-10-25';
+  assert.deepEqual(wateringStatus('2026-10-25', 3, today), { dueOn: '2026-10-28', daysUntil: 3, state: 'ok' });
+  assert.deepEqual(wateringStatus('2026-10-22', 3, today), { dueOn: '2026-10-25', daysUntil: 0, state: 'today' });
+  assert.deepEqual(wateringStatus('2026-10-20', 3, today), { dueOn: '2026-10-23', daysUntil: -2, state: 'overdue' });
+});
+
+test('readyEstimate: window edges are inclusive', () => {
+  const planted = '2026-10-01'; // 30-60 days -> 2026-10-31 .. 2026-11-30
+  assert.equal(readyEstimate(planted, 30, 60, '2026-10-30').phase, 'notYet');
+  assert.equal(readyEstimate(planted, 30, 60, '2026-10-31').phase, 'window');
+  assert.equal(readyEstimate(planted, 30, 60, '2026-11-30').phase, 'window');
+  const late = readyEstimate(planted, 30, 60, '2026-12-01');
+  assert.equal(late.phase, 'late');
+  assert.equal(late.earliest, '2026-10-31');
+  assert.equal(late.latest, '2026-11-30');
+  assert.equal(readyEstimate(planted, 30, 60, '2026-10-25').daysToEarliest, 6);
+});
+
+const sale = (o) => ({ qty: 1, unitPrice: 100, cost: 0, date: '2026-10-01T00:00:00', ...o });
+
+test('salesByMonth: groups by month, oldest first, sums add up', () => {
+  const rows = salesByMonth([
+    sale({ date: '2026-10-03T08:00:00', qty: 2, unitPrice: 50, cost: 30 }),
+    sale({ date: '2026-09-28T08:00:00', unitPrice: 200, cost: 80 }),
+    sale({ date: '2026-10-20T08:00:00', unitPrice: 10 }),
+  ]);
+  assert.deepEqual(rows.map((r) => r.key), ['2026-09', '2026-10']);
+  assert.deepEqual(rows[1], { key: '2026-10', qty: 3, revenue: 110, cost: 30, profit: 80 });
+  assert.deepEqual(salesByMonth([]), []);
+});
+
+test('salesByVariety: groups by guideId, unlinked -> other, most profit first', () => {
+  const rows = salesByVariety([
+    sale({ guideId: 'pothos', unitPrice: 100, cost: 60 }),
+    sale({ guideId: 'basil', unitPrice: 300 }),
+    sale({ unitPrice: 20, cost: 50 }),
+    sale({ guideId: '', unitPrice: 20 }),
+    sale({ guideId: 'pothos', unitPrice: 100, cost: 60 }),
+  ]);
+  assert.deepEqual(rows.map((r) => r.key), ['basil', 'pothos', 'other']);
+  assert.equal(rows[1].qty, 2);
+  assert.equal(rows[1].profit, 80);
+  assert.equal(rows[2].profit, -10);
+});
+
+test('sales rows agree with salesSummary', () => {
+  const list = [sale({ unitPrice: 12.5, cost: 3 }), sale({ qty: 4, unitPrice: 7.25, cost: 9, guideId: 'aloe' })];
+  const total = salesSummary(list);
+  const byMonth = salesByMonth(list);
+  assert.equal(byMonth.reduce((a, r) => a + r.profit, 0), total.profit);
+  assert.equal(margin(salesSummary([])), null);
 });

@@ -12,6 +12,7 @@ dependencies:
   http: ^1.2.0
   shared_preferences: ^2.2.0
   image_picker: ^1.0.7
+  file_picker: ^13.2.0
 
 dev_dependencies:
   flutter_test:
@@ -20,3 +21,10 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: Bricolage
+      fonts:
+        - asset: assets/fonts/BricolageGrotesque.ttf
+    - family: Figtree
+      fonts:
+        - asset: assets/fonts/Figtree.ttf

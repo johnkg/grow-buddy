@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'backup.dart';
 import 'screens/guide_screen.dart';
 import 'screens/my_plants_screen.dart';
 import 'screens/debug_screen.dart';
 import 'screens/sales_screen.dart';
 import 'store.dart';
+import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,10 +21,8 @@ class GrowBuddyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Grow Buddy',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorSchemeSeed: Colors.green,
-        useMaterial3: true,
-      ),
+      theme: growBuddyTheme(Brightness.light),
+      darkTheme: growBuddyTheme(Brightness.dark),
       home: const HomeShell(),
     );
   }
@@ -67,10 +67,10 @@ class _HomeShellState extends State<HomeShell> {
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.menu_book), label: 'Guide'),
-          NavigationDestination(icon: Icon(Icons.local_florist), label: 'My plants'),
-          NavigationDestination(icon: Icon(Icons.healing), label: 'Debug'),
-          NavigationDestination(icon: Icon(Icons.payments), label: 'Sales'),
+          NavigationDestination(icon: Icon(Icons.menu_book_outlined), label: 'Guide'),
+          NavigationDestination(icon: Icon(Icons.local_florist_outlined), label: 'My plants'),
+          NavigationDestination(icon: Icon(Icons.search), label: 'Debug'),
+          NavigationDestination(icon: Icon(Icons.payments_outlined), label: 'Sales'),
         ],
       ),
     );
@@ -88,12 +88,58 @@ class _SettingsDialog extends StatefulWidget {
 class _SettingsDialogState extends State<_SettingsDialog> {
   final _urlController = TextEditingController(text: Store.instance.serverUrl);
   final _tokenController = TextEditingController(text: Store.instance.appToken);
+  String? _backupMessage;
 
   @override
   void dispose() {
     _urlController.dispose();
     _tokenController.dispose();
     super.dispose();
+  }
+
+  Future<void> _export() async {
+    try {
+      final b = Store.instance.exportBackup();
+      final saved = await BackupIo.current.save(b.fileName, b.encode());
+      _say(saved ? 'Backup saved as ${b.fileName}.' : 'Export cancelled.');
+    } catch (_) {
+      _say('Could not save the backup file.');
+    }
+  }
+
+  Future<void> _import() async {
+    try {
+      final text = await BackupIo.current.pickText();
+      if (text == null) return;
+      final b = Backup.decode(text);
+      if (!mounted) return;
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Replace your data?'),
+          content: Text(
+            'This backup has ${b.plants.length} plants and ${b.sales.length} sales. '
+            'The ${Store.instance.plants.length} plants and ${Store.instance.sales.length} sales '
+            'on this device will be replaced.',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Replace')),
+          ],
+        ),
+      );
+      if (ok != true) return;
+      await Store.instance.restore(b);
+      _say('Restored ${b.plants.length} plants and ${b.sales.length} sales.');
+    } on FormatException catch (e) {
+      _say(e.message);
+    } catch (_) {
+      _say('Could not read that file.');
+    }
+  }
+
+  void _say(String msg) {
+    if (mounted) setState(() => _backupMessage = msg);
   }
 
   @override
@@ -127,6 +173,33 @@ class _SettingsDialogState extends State<_SettingsDialog> {
                 border: OutlineInputBorder(),
               ),
             ),
+            const SizedBox(height: 20),
+            Text('Backup', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 4),
+            const Text(
+              'Your plants and sales are stored only on this device (in the browser on the web). '
+              'Clearing browser data or switching phones loses them, so export a backup now and then.',
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _export,
+                  icon: const Icon(Icons.download),
+                  label: const Text('Export backup'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _import,
+                  icon: const Icon(Icons.upload),
+                  label: const Text('Import backup'),
+                ),
+              ],
+            ),
+            if (_backupMessage != null) ...[
+              const SizedBox(height: 8),
+              Text(_backupMessage!, key: const Key('backupMessage')),
+            ],
           ],
         ),
       ),

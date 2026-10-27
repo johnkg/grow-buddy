@@ -48,7 +48,8 @@ class _DebugScreenState extends State<DebugScreen> {
   }
 
   Future<void> _pickPhoto(ImageSource source) async {
-    final x = await ImagePicker().pickImage(source: source, maxWidth: 1280, imageQuality: 85);
+    final x = await ImagePicker()
+        .pickImage(source: source, maxWidth: 1280, imageQuality: 85);
     if (x == null) return;
     final bytes = await x.readAsBytes();
     final name = x.name.toLowerCase();
@@ -67,7 +68,8 @@ class _DebugScreenState extends State<DebugScreen> {
   Future<void> _runAi() async {
     final url = Store.instance.serverUrl;
     if (url.isEmpty) {
-      setState(() => _aiError = 'Set the server URL in Settings (gear icon) first.');
+      setState(
+          () => _aiError = 'Set the server URL in Settings (gear icon) first.');
       return;
     }
     setState(() {
@@ -76,7 +78,10 @@ class _DebugScreenState extends State<DebugScreen> {
       _aiResult = null;
     });
     try {
-      final labels = symptoms.where((s) => _selected.contains(s.id)).map((s) => s.label).toList();
+      final labels = symptoms
+          .where((s) => _selected.contains(s.id))
+          .map((s) => s.label)
+          .toList();
       final r = await AiDiagnosis.diagnose(
         serverUrl: url,
         appToken: Store.instance.appToken,
@@ -99,18 +104,18 @@ class _DebugScreenState extends State<DebugScreen> {
   Widget build(BuildContext context) {
     final myPlants = Store.instance.plants;
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
       children: [
         Text('Which plant?', style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 4),
         DropdownButtonFormField<String>(
           initialValue: _plantChoice,
           isExpanded: true,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
           hint: const Text('Pick one (optional)'),
           items: [
             for (final p in myPlants)
-              DropdownMenuItem(value: 'my:${p.id}', child: Text('Mine: ${p.nickname}')),
+              DropdownMenuItem(
+                  value: 'my:${p.id}', child: Text('Mine: ${p.nickname}')),
             for (final g in plantGuides)
               DropdownMenuItem(value: 'guide:${g.id}', child: Text(g.name)),
           ],
@@ -142,7 +147,8 @@ class _DebugScreenState extends State<DebugScreen> {
           controller: _notes,
           maxLines: 3,
           decoration: const InputDecoration(
-            labelText: 'Extra notes (how often you water, recent changes, pot type...)',
+            labelText:
+                'Extra notes (how often you water, recent changes, pot type...)',
             border: OutlineInputBorder(),
           ),
         ),
@@ -162,7 +168,9 @@ class _DebugScreenState extends State<DebugScreen> {
             ),
             if (_photo != null) ...[
               const SizedBox(width: 8),
-              TextButton(onPressed: () => setState(() => _photo = null), child: const Text('Remove')),
+              TextButton(
+                  onPressed: () => setState(() => _photo = null),
+                  child: const Text('Remove')),
             ],
           ],
         ),
@@ -195,13 +203,15 @@ class _DebugScreenState extends State<DebugScreen> {
         if (_aiError != null)
           Padding(
             padding: const EdgeInsets.only(top: 12),
-            child: Text(_aiError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            child: Text(_aiError!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ),
         if (_aiResult != null)
           Card(
             margin: const EdgeInsets.only(top: 12),
+            color: Theme.of(context).colorScheme.tertiaryContainer,
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               child: SelectableText(_aiResult!),
             ),
           ),
@@ -211,7 +221,11 @@ class _DebugScreenState extends State<DebugScreen> {
           if (_ranked!.isEmpty) const Text('Nothing matched.'),
           for (final r in _ranked!.take(5))
             Card(
+              margin: const EdgeInsets.only(top: 8),
+              clipBehavior: Clip.antiAlias,
               child: ExpansionTile(
+                shape: const Border(),
+                collapsedShape: const Border(),
                 title: Text(r.cause.title),
                 subtitle: Text(r.cause.why),
                 childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),

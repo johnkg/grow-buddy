@@ -12,6 +12,7 @@ Future<String?> showTextPrompt(
   String? hintText,
   int maxLines = 1,
   bool autofocus = false,
+  TextInputType? keyboardType,
 }) {
   return showDialog<String>(
     context: context,
@@ -23,6 +24,7 @@ Future<String?> showTextPrompt(
       hintText: hintText,
       maxLines: maxLines,
       autofocus: autofocus,
+      keyboardType: keyboardType,
     ),
   );
 }
@@ -35,6 +37,7 @@ class _TextPromptDialog extends StatefulWidget {
   final String? hintText;
   final int maxLines;
   final bool autofocus;
+  final TextInputType? keyboardType;
 
   const _TextPromptDialog({
     required this.title,
@@ -44,6 +47,7 @@ class _TextPromptDialog extends StatefulWidget {
     required this.hintText,
     required this.maxLines,
     required this.autofocus,
+    required this.keyboardType,
   });
 
   @override
@@ -67,6 +71,7 @@ class _TextPromptDialogState extends State<_TextPromptDialog> {
         controller: _controller,
         autofocus: widget.autofocus,
         maxLines: widget.maxLines,
+        keyboardType: widget.keyboardType,
         decoration: InputDecoration(labelText: widget.labelText, hintText: widget.hintText),
       ),
       actions: [

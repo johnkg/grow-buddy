@@ -40,7 +40,9 @@ The server exposes `GET /api/plants`, `GET /api/symptoms` and `POST /api/diagnos
 | Variable | Purpose |
 | --- | --- |
 | `ANTHROPIC_API_KEY` | Required for photo diagnosis |
-| `APP_TOKEN` | Optional shared secret the app must send |
+| `APP_TOKEN` | Shared secret the app must send. Required when `NODE_ENV=production` |
+| `TRUST_PROXY` | Set to `1` behind a trusted reverse proxy so rate limits use the real client IP |
+| `DAILY_LIMIT` / `GLOBAL_LIMIT_PER_MIN` | Ceilings across all clients (defaults 500 / 60) |
 | `CLAUDE_MODEL` | Model to use (default `claude-sonnet-5-5`) |
 | `ALLOWED_ORIGIN` | CORS origin (default `*`) |
 | `PORT` | Port to listen on (default `8787`) |

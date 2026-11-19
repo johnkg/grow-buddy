@@ -245,3 +245,59 @@ test('diagnose: multiple text parts are joined, non-text parts ignored', async (
     await s.close();
   }
 });
+
+test('rate limit uses x-forwarded-for only when trustProxy is on', async () => {
+  const s = await start({ rateLimitPerMin: 1, trustProxy: true });
+  try {
+    assert.equal((await post(s.base, '/api/diagnose', good, { 'x-forwarded-for': '1.1.1.1' })).status, 200);
+    assert.equal((await post(s.base, '/api/diagnose', good, { 'x-forwarded-for': '2.2.2.2' })).status, 200);
+    assert.equal((await post(s.base, '/api/diagnose', good, { 'x-forwarded-for': '1.1.1.1' })).status, 429);
+  } finally { await s.close(); }
+  const t = await start({ rateLimitPerMin: 1 });
+  try {
+    assert.equal((await post(t.base, '/api/diagnose', good, { 'x-forwarded-for': '1.1.1.1' })).status, 200);
+    // A spoofed header must not give an attacker a fresh bucket.
+    assert.equal((await post(t.base, '/api/diagnose', good, { 'x-forwarded-for': '2.2.2.2' })).status, 429);
+  } finally { await t.close(); }
+});
+
+test('global per-minute ceiling applies across different clients', async () => {
+  const s = await start({ rateLimitPerMin: 100, globalLimitPerMin: 2, trustProxy: true });
+  try {
+    assert.equal((await post(s.base, '/api/diagnose', good, { 'x-forwarded-for': '1.1.1.1' })).status, 200);
+    assert.equal((await post(s.base, '/api/diagnose', good, { 'x-forwarded-for': '2.2.2.2' })).status, 200);
+    assert.equal((await post(s.base, '/api/diagnose', good, { 'x-forwarded-for': '3.3.3.3' })).status, 429);
+  } finally { await s.close(); }
+});
+
+test('daily ceiling stops upstream calls and resets after 24 hours', async () => {
+  let t = 1000;
+  const s = await start({ rateLimitPerMin: 100, globalLimitPerMin: 100, dailyLimit: 2, now: () => t });
+  try {
+    assert.equal((await post(s.base, '/api/diagnose', good)).status, 200);
+    assert.equal((await post(s.base, '/api/diagnose', good)).status, 200);
+    const r = await post(s.base, '/api/diagnose', good);
+    assert.equal(r.status, 429);
+    assert.equal(s.calls.length, 2);
+    t += 86400000 + 1;
+    assert.equal((await post(s.base, '/api/diagnose', good)).status, 200);
+  } finally { await s.close(); }
+});
+
+test('wrong or missing app token is rejected before any upstream call', async () => {
+  const s = await start({ appToken: 'correct-horse' });
+  try {
+    assert.equal((await post(s.base, '/api/diagnose', good)).status, 401);
+    assert.equal((await post(s.base, '/api/diagnose', good, { 'x-app-token': 'correct-hors' })).status, 401);
+    assert.equal((await post(s.base, '/api/diagnose', good, { 'x-app-token': 'correct-horse' })).status, 200);
+    assert.equal(s.calls.length, 1);
+  } finally { await s.close(); }
+});
+
+test('oversized content-length is refused with 413', async () => {
+  const s = await start({ maxBodyBytes: 50 });
+  try {
+    assert.equal((await post(s.base, '/api/diagnose', good)).status, 413);
+    assert.equal(s.calls.length, 0);
+  } finally { await s.close(); }
+});
